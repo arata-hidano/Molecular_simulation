@@ -62,7 +62,7 @@ int seq_length_FMD = 633 ;
 int seq_length = 634;
 /*MUTATION MODEL OR NOT?*/
 int mutation_model = 1; //1 if mutation model
-int detection_scenario = 1 ;
+int detection_scenario = 0 ;
 /*WHICH DISEASE?*/
 int disease = 1; //0 if FMD, 1 if FMD
 long long num_farm_production = num_total_farms*num_production_type ; // This is the ID for each farm production unit
@@ -110,13 +110,13 @@ char OutPutFile[] = "OutPut2.csv";
 int day_S3toS4, day_S2toS3;
 int max_S3toS4_TB = 0.4*365; // max day to detect - 1 Conlan(2014) modified
 int max_S2toS3_TB = 5*365; // max day to occult - 1  Brooks-Pollock's parameter 11.1
-int max_S3toS4_FMD = 2 ;
+int max_S3toS4_FMD = 20 ;
 int max_S2toS3_FMD = 5 ;
 int max_S2toS3, max_S3toS4, day_to_S3, day_to_S4 ;
 double Se_occult = 0.2;
 double Se_detect = 0.45;
 double Se_slaughter = 0.3 ;// @@@@ have to revise this value
-double beta_a = 0.1;//within-herd transmission parameter
+double beta_a = 1;//within-herd transmission parameter
 double beta_b = 0.00015;//wildlife transmission parameter
 double mu = 2.7*0.001*633/365; // use substitution rate used in Hall, which was further converted to the substitution rate for the whole VP1 seq and per day
  //must be random draw from some distribution 0.003 - 0.036 Brooks-Pollock
@@ -2491,7 +2491,7 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 	testareanum = FarmData[farm_id][3] ;
 	
 	/*=================Calculate the total rate of event in Gillespie========================================================*/
-	if ((testareanum==0||FarmProductionStatus[i][3]>0||FarmProductionStatus[i][4]>0)&&FarmProductionStatus[i][1]>0&&FarmProductionStatus[i][0]>0)
+	if ((testareanum==0||FarmProductionStatus[i][3]>0||FarmProductionStatus[i][4]>0||FarmProductionStatus[i][2]>0)&&FarmProductionStatus[i][0]>0)
 	{    //either: (farm is in movement control || there is occult animal || there is detectable animal) AND there is susceptible animal AND there is animal in the herd
 		//if(FarmProductionStatus[i][0]<0)
 		//{
@@ -2522,11 +2522,11 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 	    else if (disease==1)//FMD
 	    {
 	    inf_pressure = beta_a*FarmProductionStatus[i][1]*(FarmProductionStatus[i][3])/FarmProductionStatus[i][0]  ; //bSI/N	
-	    if(FarmProductionStatus[i][3]>0)
-	    {
-	    printf("inf pressure is %lf",inf_pressure) ;
+	    //if(FarmProductionStatus[i][3]>0)
+	    //{
+	    //printf("inf pressure is %lf",inf_pressure) ;
 	   // system("pause") ;	
-		}
+		//}
 		
 	    if(mutation_model==1) //@ add mutation_model parameter
 			{
@@ -2583,10 +2583,6 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 				}
 											 // probability of infections to be detected for FMD?! Should not be too high to allow the spread. use Bolivian parameter 0.3
 											// I am using this parameter for an infected herd to be detected at passive surveillance by vets (I believe) not by farmer	
-				else
-				{
-					detection_pressure = 0 ;
-				}
 			    }
 		/*@@@@ Needs to complete other scenarios below: different surveillance pressure between regions and contact tracing.	    
 			else if(detection_scenario==1@@@) // infecteds have different probabilities to be infected (or different periods to be detected: how can I consider this? switch on and off based on year?)
@@ -2607,7 +2603,10 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 			} // not store detection pressure but can easily calculated by [6] - [7] - [5]: CORRECTION - THIS IS NOT TRUE. [6] is a cumulative pressure over herds up to the current herd, so this formula won't give detection_pressure.
 			// Should I store detection_pressure or calculate it again given that it sounds useless to store such a simple number in the data?
 			// for now calculate it again but can be changed later
-			
+			else
+			{
+					detection_pressure = 0 ;
+			}
 /*==============================Calculate detection pressure done=========================================================*/		
 			cumu_pressure = cumu_pressure + inf_pressure + mutation_pressure + detection_pressure; // cumu_pressure is the total rate up to this herd, so this will be used when selecting random herd. So this is recorded in column 6.
 			sum_pressure = sum_pressure + inf_pressure+ mutation_pressure + detection_pressure;	// sum_pressure is the total rate for ALL the herd. So this won't be recorded one by one. 
@@ -2625,6 +2624,11 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 		
 		//printf("inf pressure is %f",sum_pressure);
 	}
+	else
+		{
+			FarmProductionStatus[i][6] = 0 ;
+		}
+	
 	/*=================Calculating total event rate done=======================================================================*/
 	
 	}//END OF for loop A	
@@ -2643,7 +2647,6 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 	   //printf("ceil days is %d",today_date);
 	   //system("pause");
 	   double random_value = (double)rand()/(double)(RAND_MAX)*sum_pressure;
-	   //printf("random_value is %f",random_value);
 	   
 /*=======Define the farm on which an event will occur====================*/
 	   
@@ -2653,11 +2656,17 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 	   
 	   while(random_value>current_value) //random_value defines which farm event will occur at
 	   {
-	   	farm_id = (int)floor(pro_id/3) ; // where farm_id was used??
+	   	
 	   	if(mutation_model==1)
 	   		{
-	   		if(FarmProductionStatus[pro_id][5]>0||FarmProductionStatus[pro_id][7]>0) //either infection or mutation pressure has to be >0 for the farm to have events
-	   		current_value = FarmProductionStatus[pro_id][6] ;
+	   		if(FarmProductionStatus[pro_id][6]>0) //either infection or mutation pressure has to be >0 for the farm to have events
+	   		
+			   {
+			   current_value = FarmProductionStatus[pro_id][6] ;
+	   		printf("current value is %f",current_value) ;
+	   		printf("random_value is %f",random_value);
+	   		printf("sum_pressure is %f",sum_pressure);
+	   	        }
 		    }
 		else if(mutation_model==0)
 			{
@@ -2666,12 +2675,13 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 			}
 		if(current_value>=random_value) // means the farm that has sum_pressure closest to but not bigger than random_value will be selected as the farm where an event occur
 	       {
-	       	break;
-		   }
+	       	printf("farm determined") ;
+			   break;
+	    		   }
 		 else
 		 {
 		 	pro_id++;	
-		 	//	printf("next pro id");
+		 printf("pro id is %d", pro_id);
 		 }    
 		   //(disease==0&&(FarmData[farm_id][3]==0||FarmProductionStatus[pro_id][3]>0||FarmProductionStatus[pro_id][4]>0)&&(FarmProductionStatus[pro_id][0]!=0)) //the last one, it used to be FarmProductionStatus[pro_id][0] means if this is equal to 0, which should not happen
 		   //FarmData[farm_id][3] is testarea, so checking if this is MCA
@@ -2684,7 +2694,7 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 	   
 	   }//pro_id is the farm to choose for the event
 	   
-	   
+	   farm_id = (int)floor(pro_id/3) ; // where farm_id was used??
 /*=======END: Define the farm on which an event will occur====================*/
 
 
@@ -2701,10 +2711,11 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 ===========================================================================================================*/
 	if(mutation_model==1)
 	{
+		printf("mut model") ;
 	// here to calculate the detection pressure again
 		if(detection_scenario==0&&disease==1)
 		{
-		if(FarmData[farm_id][6]&&FarmProductionStatus[pro_id][3]>0)
+		if(FarmData[farm_id][6]==0&&FarmProductionStatus[pro_id][3]>0)
 			{
 			detection_pressure = 0.3/365 ;
 			}
@@ -2712,7 +2723,7 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 			{
 			detection_pressure = 0;
 			}
-		
+		printf("detection_pressure is %f",detection_pressure) ;
 		}
 	/* @@@@ detection pressure for other scenarios to be defined.-----------------------------	
 		else if(detection_scenario==1)
@@ -2731,7 +2742,7 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
     double random_value = (double)rand()/(double)RAND_MAX*(FarmProductionStatus[pro_id][5]);
 	}
 /*=====================CHOOSE WHICH EVENTS?==============================================================*/	
-
+printf("random value 2 is %f", random_value) ;
 /*===================================WITHIN HERD TRANSMISSION PART STARTS===========================================================================================*/
 	if(random_value<=FarmProductionStatus[pro_id][5])
 	{
@@ -2836,19 +2847,23 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 	/*==============MUTATION PART STARTS=================================================================================================================*/
 		{
 			printf("This is mutation") ;
-			system("pause") ;
+		//	system("pause") ;
 			//get random value n which is euql to the number of suscptible or that are subjcted to mutations
 			//get nth animals that are eligible
-		int num_tot_mutatable = (int)FarmProductionStatus[i][7]/mu ; //total number of animals that are subjected to mutations
+		int num_tot_mutatable = (int)(FarmProductionStatus[pro_id][7]/mu) ; //total number of animals that are subjected to mutations
 		int random_n = rand()%num_tot_mutatable+1; //get random number between 1 and num_tot_mutatable
+		printf("A") ;
 		 struct animal_node *current_animal;
+		 printf("B") ;
 		 current_animal = FarmProductionList[pro_id];
+		 printf("C") ;
 		 if(current_animal==NULL)
 		 {
 		 	printf("Something wrong! Animals should exist here but not!");
 		 }
 		 else
 		 {
+		 	printf("current animal is not null") ;
 		 	int counter;
 		 	counter = 0;
 		 	while(counter<random_n)
@@ -2866,6 +2881,7 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 				char next_base; // make sure it is just char, not char[], which becomes character string type
 				char current_base ; //get the current base
     			current_base = mutating_isolate->sequence[r_position] ;
+    			printf("current base is %c", current_base) ;
     			if(current_base=='A') // make sure the character is bracketted with '', not " "
 						{
 							printf("Matched!");
