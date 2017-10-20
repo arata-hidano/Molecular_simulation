@@ -116,9 +116,10 @@ int max_S2toS3, max_S3toS4, day_to_S3, day_to_S4 ;
 double Se_occult = 0.2;
 double Se_detect = 0.45;
 double Se_slaughter = 0.3 ;// @@@@ have to revise this value
-double beta_a = 1;//within-herd transmission parameter
+double beta_a = 1.5;//within-herd transmission parameter
 double beta_b = 0.00015;//wildlife transmission parameter
-double mu = 2.7*0.001*633/365; // use substitution rate used in Hall, which was further converted to the substitution rate for the whole VP1 seq and per day
+double mu = 2.7*0.001*633*10/365; // use substitution rate used in Hall, which was further converted to the substitution rate for the whole VP1 seq and per day
+double detection_pressure_origin = 0.3/30;
  //must be random draw from some distribution 0.003 - 0.036 Brooks-Pollock
 int *current_id_isolate; // a pointer to a memory that keeps the track of isolate id
 char Seq_master[634]; //Master (initial) sequence for FMD VP1
@@ -134,6 +135,11 @@ int num_isolate_seq_vars = 2;
 // [0]: akey, [1]: pro_id, [2]: isolated_time, [3]: diverged_time, [4]: id, [5]: parent_id, [6]: num_mut, [7]: isolated (1==Yes).
 int *nth_isolate;
 int *nth_slaughter;
+
+/*Counter for Markov event*/
+int *c_transmission ;
+int *c_mutation ;
+int *c_detection ;
 
 /* STRUCTURE DECLARATIONS */  
 struct animal_node {
@@ -309,8 +315,13 @@ int main(void){
    	      // printf("birth data read");
 		   
 /*2.7 Read sequence data*/
-read_sequence_data(SequenceData,seq_length_FMD,Seq_master) ;
- 	         
+read_sequence_data(SequenceData,seq_length,Seq_master) ;
+int i = 0;
+ 	        // while(Seq_master[i]!='\0')
+        //				{
+        	//				printf("%c",Seq_master[i]) ;
+			//			i++ ;
+			//			}
 
 /*Create IsolateData frame that stores isolate information*/
 
@@ -371,7 +382,7 @@ struct event_node* event_day[sim_days]; // a pointer to a struct of event
       	{
       		max_S2toS3 = max_S2toS3_TB;
       		max_S3toS4 = max_S3toS4_TB ;
-		}
+      	}
 		else if(disease==1)
 		{
 			max_S2toS3 = max_S2toS3_FMD ;
@@ -399,7 +410,17 @@ for(iteration=0; iteration<tot_iterations; iteration++)
       
       int var2 = 0;
       nth_slaughter = &var2;
-      printf("nth_slaughter is %d", *nth_slaughter);
+      
+      int var3 = 0;
+      c_transmission = &var3;
+      
+      int var4 = 0;
+      c_mutation = &var4;
+      
+      int var5 = 0;
+      c_detection = &var5;
+      
+    //  printf("nth_slaughter is %d", *nth_slaughter);
       char* OutIsolateDataFile;
       
       char number[1] ;
@@ -413,8 +434,8 @@ for(iteration=0; iteration<tot_iterations; iteration++)
 	  srand((unsigned)time(NULL));	
        
       	
-      	int var3 = 0;
-		current_id_isolate = &var3; //reset the counter for current id for isolate
+      	int var6 = 0;
+		current_id_isolate = &var6; //reset the counter for current id for isolate
       	// INITIALISE THE FARM TB DETECTED STATUS, SUM OF OCCULT, SUM OF DETECTABLE
       	for(i=0; i< num_total_farms; i++)
       	{
@@ -438,6 +459,8 @@ for(iteration=0; iteration<tot_iterations; iteration++)
 				
    	    	  
    		    }
+   		    printf("Isolate 0 0 is %lld", IsolateData[0][0]) ;
+   		    system("pause") ;
    		     	
    		      for(i=0;i<tot_iterations;i++)
  			 {
@@ -453,7 +476,7 @@ for(iteration=0; iteration<tot_iterations; iteration++)
 /*=====2.2.1 Farm-production pointer 1: Pointer to table of infection status=======================*/
 	  	// This is table storing number of infected, susceptible and so on for each management unit
 	  	
-	  		printf("4");
+	  	//	printf("4");
    	  	 	for(i = 0; i < num_farm_production; i++)
       	  	{
      	       /*Then, for each row, specifies the required memory size for column*/
@@ -474,7 +497,7 @@ for(iteration=0; iteration<tot_iterations; iteration++)
                 event_day[i] = NULL;
                 inf_slaughtered[i] = NULL ;
                 }
-                printf("5") ;
+           //     printf("5") ;
       //	printf("event is fine");
       	/* Create a vector of size of number of animals that store a pointer to animal_node*/
       	
@@ -485,7 +508,7 @@ for(iteration=0; iteration<tot_iterations; iteration++)
       		 //initialise
       		//Farm_ptr_inf_move[i] = NULL ;
 		 // }
-       printf("animal_node_pointer is fine"); 
+    //   printf("animal_node_pointer is fine"); 
         
 /*======================ADDING ANIMAL NODE=============================================================*/ 
           // Also here we can choose which animal is infected
@@ -563,14 +586,26 @@ for (i=0; i < num_animals; i++)
         
         if (i == random_id)
         {
-        	printf("This animal is infected") ;
-        	system("pause") ;
+        //	printf("This animal is infected") ;
+        //	system("pause") ;
         	animal_node_pointer[current_akey]->disease_status = 1;
         	//new_node -> disease_status = 1 ; // infected
         	struct isolate *new_isolate ;
         	new_isolate = (struct isolate*)malloc(sizeof( struct isolate )); //new_isolate is a pointer, so it's compatible to pass this to ptr_isolate
             new_isolate -> id = 0 ; // this is the seed
             strcpy(new_isolate->sequence,Seq_master);
+            //int a = 0;
+           // while(Seq_master[a]!='\0')
+        	//			{
+        	//				printf("%c",Seq_master[a]) ;
+			//			a++ ;
+			//			}
+		//				a = 0;
+           //  while(new_isolate->sequence[a]!='\0')
+        	//			{
+        	//				printf("%c",new_isolate->sequence[a]) ;
+			//			a++ ;
+			//			}
             new_isolate -> parent_id = -1 ;
             new_isolate -> d_time = 0 ;
             new_isolate -> num_mut = 0 ;
@@ -578,12 +613,12 @@ for (i=0; i < num_animals; i++)
             animal_node_pointer[current_akey]->ptr_isolate = new_isolate; 
         	//new_node -> ptr_isolate = new_isolate; //assigning a pointer new_isolate to a pointer ptr_isolate
         	FarmProductionStatus[current_pro_id][2]++; // increment the counter for infected
-        	printf("%f animal is infected",FarmProductionStatus[current_pro_id][2] ) ;
-        	system("pause") ;
+        //	printf("%f animal is infected",FarmProductionStatus[current_pro_id][2] ) ;
+        //	system("pause") ;
 			FarmData[current_farm][4] = 1; // farm is infected
         	FarmData[current_farm][9] = -1 ; // this is seed farm
         	FarmData[current_farm][10] = 0 ; // infected time is 0
-        	*current_id_isolate = *current_id_isolate + 1;
+        	(*current_id_isolate)++;
 		}
 		else
 		{
@@ -635,8 +670,8 @@ for (i=0; i < num_animals; i++)
             	new_event -> next_node = NULL;
             	new_event -> src_testarea = -100 ;
             	add_event_node(event_day,day_to_S3, new_event) ;
-            	printf("add S3");
-            	system("pause") ;
+            //	printf("add S3");
+            //	system("pause") ;
                 }
 				/* Following was to check the bug in adding new event, which occurred because
             	I forgot to specify the size of new_event and then old memory was used
@@ -1151,14 +1186,14 @@ while(today_date<sim_days)
   while (event_day[next_non_markov_date] == NULL)
             {//loop2
 		    next_non_markov_date++; // go to the next day
-	    printf("go to next day") ;
+	  //  printf("go to next day") ;
             } // now get next non-markov date
   if(next_non_markov_date>=sim_days)
   {
   	break;
   }
   updated_date=update_markov_date(today_date,FarmData,FarmProductionStatus,FarmProductionList,num_farm_production,beta_a,beta_b,next_non_markov_date, event_day,
-  detection_scenario, disease, mutation_model, max_S2toS3,seq_length, current_id_isolate, mu, nth_isolate, IsolateData, IsolateSeqData); //@need to change arguments
+  detection_scenario, disease, mutation_model, max_S2toS3,seq_length, current_id_isolate, mu, nth_isolate, IsolateData, IsolateSeqData, c_transmission, c_mutation, c_detection, detection_pressure_origin); //@need to change arguments
   printf("day is updated %f",updated_date) ;
 // system("pause");
   if (updated_date==next_non_markov_date) // this means markov event did not happen
@@ -1179,7 +1214,7 @@ while(today_date<sim_days)
 	//	    printf("and current_pro_id is %lld and day %d",animal_node_pointer[1182045]->current_pro_id, today_date);
 	//	    printf("previous animal is %lld and next animal is %lld",animal_node_pointer[1182045]->previous_node->akey,animal_node_pointer[1182045]->next_node->akey);
 	//	 }
-	 printf("current event is %d", current_event->event_type);
+	// printf("current event is %d", current_event->event_type);
 	   if (current_event-> event_type <= 4 ) // if movement or new birth or cull death
 	      {
 	        long long src_pro_id = current_event->src_pro_id;
@@ -1257,16 +1292,17 @@ while(today_date<sim_days)
 	        //current_animal = animal_node_pointer[animal_akey] ;
 	        //current_pro_id = current_animal->current_pro_id;
 	         current_pro_id = animal_node_pointer[animal_akey]->current_pro_id ;
+	         
 	        int current_farm = (int)(floor(current_pro_id/3)) ;
-	        printf("current farm is %d", current_farm) ;
-		    if (current_event-> event_type ==6 ) //exposed to occult(TB) or exposed to infectiousness
+	      //  printf("current farm is %d", current_farm) ;
+		    if (current_event-> event_type ==6 && animal_node_pointer[animal_akey]->disease_status == 1) //exposed to occult(TB) or exposed to infectiousness
 		      {
 		      	
 		      //	printf("This is S2 to S3") ;
 		      day_S3toS4 = rand()%(max_S3toS4)+1;
-		     printf("day S3 to S4 is %d",day_S3toS4) ;
+		 //    printf("day S3 to S4 is %d",day_S3toS4) ;
 		      int day_to_add = day_S3toS4 + next_non_markov_date; //define when occult to detectable or infectious to recover happens
-			  printf("day_to_add is %d",day_to_add) ;
+		//	  printf("day_to_add is %d",day_to_add) ;
 				  	
 		      animal_node_pointer[animal_akey]-> disease_status = 2 ;
 		    //  printf("Num of status 2 is %f",FarmProductionStatus[current_pro_id][2] );
@@ -1288,7 +1324,7 @@ while(today_date<sim_days)
 		      }
 		//	  printf("S2 to S3 done") ;
 		      }
-		    if (current_event-> event_type ==7) // occult to detectable (TB), infectious to immune (FMD)
+		    if (current_event-> event_type ==7 && animal_node_pointer[animal_akey]->disease_status==2) // occult to detectable (TB), infectious to immune (FMD)
 		    //have to check how receovered are treated in coalescent/BD model
 		      {
 		      animal_node_pointer[animal_akey]-> disease_status = 3 ;
@@ -1300,18 +1336,23 @@ while(today_date<sim_days)
 		      FarmData[current_farm][7]-- ;//decrease occult
 		      printf("FarmData updated") ;
 		      //record isolate data
-		      IsolateData[*nth_isolate][0] = animal_akey ;
-		      IsolateData[*nth_isolate][1] = current_pro_id ;
-		      IsolateData[*nth_isolate][2] = today_date;
-		      IsolateData[*nth_isolate][3] = animal_node_pointer[animal_akey]->ptr_isolate->d_time;
-	          IsolateData[*nth_isolate][4] = animal_node_pointer[animal_akey]->ptr_isolate->id;
-		      IsolateData[*nth_isolate][5] = animal_node_pointer[animal_akey]->ptr_isolate->parent_id;
-		      IsolateData[*nth_isolate][6] = animal_node_pointer[animal_akey]->ptr_isolate->num_mut;
+		     // printf("akey1 is %lld",IsolateData[*nth_isolate][0]) ;
+		    //  printf("nth isolate is %d",*nth_isolate) ;
+		      IsolateData[*nth_isolate][0] = (double)animal_akey ;
+		    //  printf("akey is %lld",animal_akey) ;
+		    //  printf("akey2 is %f",IsolateData[0][0]) ;
+		      //system("pause") ;
+		      IsolateData[*nth_isolate][1] = (double)current_pro_id ;
+		      IsolateData[*nth_isolate][2] = (double)today_date;
+		      IsolateData[*nth_isolate][3] = (double)(animal_node_pointer[animal_akey]->ptr_isolate->d_time);
+	          IsolateData[*nth_isolate][4] = (double)(animal_node_pointer[animal_akey]->ptr_isolate->id);
+		      IsolateData[*nth_isolate][5] = (double)(animal_node_pointer[animal_akey]->ptr_isolate->parent_id);
+		      IsolateData[*nth_isolate][6] = (double)(animal_node_pointer[animal_akey]->ptr_isolate->num_mut);
 			   IsolateData[*nth_isolate][7] = 0 ; // not isolated 
 			   printf("IsolateData stored") ;
 			  // IsolateSeqData[*nth_isolate][0] = current_animal->ptr_isolate->id ;
 			   IsolateSeqData[*nth_isolate] = &(animal_node_pointer[animal_akey]->ptr_isolate->sequence);
-			   *nth_isolate = *nth_isolate + 1 ;
+			   (*nth_isolate)++;
 			   printf("S3 to S4 done") ;
 		      }
 	       // printf("Updating TB status done") ;	
@@ -1373,11 +1414,11 @@ while(today_date<sim_days)
 	   {
 	 //  	printf("going to free event now") ;
 	   free(previous_event);//this is not dynamic memory, but is it ok to free?
-	   printf("next event is %d, %lld", current_event->event_type, current_event->akey);
+	 //  printf("next event is %d, %lld", current_event->event_type, current_event->akey);
        }
        else
        {
-       	printf("next event is NULL") ;
+      // 	printf("next event is NULL") ;
 	   }
 	   event_day[next_non_markov_date] = current_event;
 	   //printf("event day is pointing %lld",event_day[next_non_markov_date]->akey);
@@ -1459,7 +1500,9 @@ count_farms_infected_detected(FarmData,OutPut,num_total_farms,iteration);
    
    export_IsolateData(OutIsolateDataFile, IsolateData, IsolateSeqData, num_max_isolate, num_isolate_vars) ;
    free(OutIsolateDataFile) ;
-   
+   printf("transmission happened %d", *c_transmission) ;
+    printf("mutation happened %d", *c_mutation) ;
+     printf("detection happened %d", *c_detection) ;
 }//END OF EACH ITERATION
 
 /*===========END OF ONE ITERATION==============================================================================================================================================*/
@@ -1832,7 +1875,7 @@ void visualize_list(struct event_node *event_day[], int day)
           {
           //	if (current_node1->des_pro_id==(1225*3+2)||current_node1->src_pro_id==(1225*3+2))
            //   {
-			 printf("%d,%lld ", current_node1 -> event_type, current_node1 -> akey);
+		//	 printf("%d,%lld ", current_node1 -> event_type, current_node1 -> akey);
 			 // system("pause") ;
 		   // }
               
@@ -1991,23 +2034,23 @@ struct animal_node *inf_slaughtered[], struct isolate *head_list_isolate[], stru
 				
  		//collect sequence data
  		struct isolate *ptr_current_isolate; 
- 		int nth = *nth_isolate ;
-		head_list_isolate[nth] = moving_animal->ptr_isolate ; //handover the isolated data @@@ have to define nth_isolate and include it in the function argument
+ 		//int nth = *nth_isolate ;
+		//head_list_isolate[nth] = moving_animal->ptr_isolate ; //handover the isolated data @@@ have to define nth_isolate and include it in the function argument
 		//@@@@ why did I want this head_list_isolate? 
 		ptr_current_isolate = moving_animal->ptr_isolate ;
-		IsolateData[nth][0] = moving_animal->akey ;
-		IsolateData[nth][1] = moving_animal->current_pro_id ;
-		IsolateData[nth][2] = today_date;
-		IsolateData[nth][3] = ptr_current_isolate->d_time;
-		IsolateData[nth][4] = ptr_current_isolate->id;
-		IsolateData[nth][5] = ptr_current_isolate->parent_id;
-		IsolateData[nth][6] = ptr_current_isolate->num_mut;
-		IsolateData[nth][7] = 1 ;
+		IsolateData[*nth_isolate][0] = (double)(moving_animal->akey) ;
+		IsolateData[*nth_isolate][1] = (double)(moving_animal->current_pro_id) ;
+		IsolateData[*nth_isolate][2] = (double)(today_date);
+		IsolateData[*nth_isolate][3] = (double)(ptr_current_isolate->d_time);
+		IsolateData[*nth_isolate][4] = (double)(ptr_current_isolate->id);
+		IsolateData[*nth_isolate][5] = (double)(ptr_current_isolate->parent_id);
+		IsolateData[*nth_isolate][6] = (double)(ptr_current_isolate->num_mut);
+		IsolateData[*nth_isolate][7] = 1 ;
 		
 		//IsolateSeqData[nth][0] = moving_animal->ptr_isolate->id ;
-		IsolateSeqData[nth] = &(moving_animal->ptr_isolate->sequence);
+		IsolateSeqData[*nth_isolate] = &(moving_animal->ptr_isolate->sequence);
 		//IsolateData[nth][8] = current_animal->ptr_isolate->sequence ;
-		*nth_isolate = nth + 1;  // increment isolate counter by 1
+		(*nth_isolate)++;  // increment isolate counter by 1
 		 	 
 		 // testing all animals in the herd - this will be in the main function
  		// movement ban - this already done
@@ -2017,7 +2060,7 @@ struct animal_node *inf_slaughtered[], struct isolate *head_list_isolate[], stru
 	 }
 	 else 
 	 {
-	 	*nth_slaughter = *nth_slaughter + 1 ;
+	 	(*nth_slaughter)++ ;
 	 }
  }
 	
@@ -2400,8 +2443,8 @@ int current_status;
      	
 		 current_animal = FarmProductionList[i*3]; //get the first animal
 		 //if checking age, do here in future
-		current_animal->type++;
-		current_animal->current_pro_id++; 
+		(current_animal->type)++;
+		(current_animal->current_pro_id)++; 
 	//	if(current_animal->akey==2454078)
 	//	{
 	//		printf("calf unit is %lld i is %d", current_animal->current_pro_id, i);
@@ -2469,7 +2512,7 @@ int current_status;
 /*----------------------------------------------------------------------------------*/
 double update_markov_date(double today_date, long long **FarmData, double **FarmProductionStatus,struct animal_node *FarmProductionList[],int num_farm_production,double beta_a,double beta_b, 
 int next_non_markov_date, struct event_node *event_day[], int detection_scenario, int disease, int mutation_model, int max_S2toS3, int seq_length, 
-int *current_id_isolate, double mu, int *nth_isolate, double **IsolateData, char *IsolateSeqData[])
+int *current_id_isolate, double mu, int *nth_isolate, double **IsolateData, char *IsolateSeqData[], int *c_transmission, int *c_mutation, int *c_detection, double detection_pressure_origin)
 {
 
 double inf_pressure, mutation_pressure,inf_pressure_wild,sum_pressure,cumu_pressure, detection_pressure;
@@ -2531,11 +2574,11 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 	    if(mutation_model==1) //@ add mutation_model parameter
 			{
 				mutation_pressure = mu*(FarmProductionStatus[i][2]+FarmProductionStatus[i][3]); //mutation occurs in exposed and infectious equally
-				if(mutation_pressure>0)
-				{
-				printf("mut pressure is %lf",mutation_pressure) ;
-	   			system("pause") ;
-				}
+		//		if(mutation_pressure>0)
+		//		{
+		//		printf("mut pressure is %lf",mutation_pressure) ;
+	   	//		system("pause") ;
+		//		}
 				
 				FarmProductionStatus[i][7] = mutation_pressure;
 			}
@@ -2579,7 +2622,7 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 			    {
 			    if(FarmData[farm_id][6]==0&&FarmProductionStatus[i][3]>0) // this farm should not be already detected
 				{
-				detection_pressure = 0.3/365;
+				detection_pressure = detection_pressure_origin;
 				}
 											 // probability of infections to be detected for FMD?! Should not be too high to allow the spread. use Bolivian parameter 0.3
 											// I am using this parameter for an infected herd to be detected at passive surveillance by vets (I believe) not by farmer	
@@ -2634,9 +2677,9 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 	}//END OF for loop A	
 	//printf("inf pressure is %f",sum_pressure);
 	 double random_value = ((double)rand()/(double)RAND_MAX) ;
-	 printf("random value is %f",random_value);
+//	 printf("random value is %f",random_value);
      day_to_markov =(-log(random_value))/sum_pressure ; // Waiting time
-     printf("day_to_markov is %f",day_to_markov);
+  //   printf("day_to_markov is %f",day_to_markov);
     // system("pause") ;
 //ASSESS IF NEXT MARKOV TIME IS BEFORE NEXT NON MARKOV TIME     
 	if (next_non_markov_date>day_to_markov+today_date)
@@ -2663,9 +2706,9 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 	   		
 			   {
 			   current_value = FarmProductionStatus[pro_id][6] ;
-	   		printf("current value is %f",current_value) ;
-	   		printf("random_value is %f",random_value);
-	   		printf("sum_pressure is %f",sum_pressure);
+	//   		printf("current value is %f",current_value) ;
+	//   		printf("random_value is %f",random_value);
+	//   		printf("sum_pressure is %f",sum_pressure);
 	   	        }
 		    }
 		else if(mutation_model==0)
@@ -2675,13 +2718,13 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 			}
 		if(current_value>=random_value) // means the farm that has sum_pressure closest to but not bigger than random_value will be selected as the farm where an event occur
 	       {
-	       	printf("farm determined") ;
+//       	printf("farm determined") ;
 			   break;
 	    		   }
 		 else
 		 {
 		 	pro_id++;	
-		 printf("pro id is %d", pro_id);
+	//	 printf("pro id is %d", pro_id);
 		 }    
 		   //(disease==0&&(FarmData[farm_id][3]==0||FarmProductionStatus[pro_id][3]>0||FarmProductionStatus[pro_id][4]>0)&&(FarmProductionStatus[pro_id][0]!=0)) //the last one, it used to be FarmProductionStatus[pro_id][0] means if this is equal to 0, which should not happen
 		   //FarmData[farm_id][3] is testarea, so checking if this is MCA
@@ -2711,19 +2754,19 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 ===========================================================================================================*/
 	if(mutation_model==1)
 	{
-		printf("mut model") ;
+	//	printf("mut model") ;
 	// here to calculate the detection pressure again
 		if(detection_scenario==0&&disease==1)
 		{
 		if(FarmData[farm_id][6]==0&&FarmProductionStatus[pro_id][3]>0)
 			{
-			detection_pressure = 0.3/365 ;
+			detection_pressure = detection_pressure_origin ;
 			}
 			else
 			{
 			detection_pressure = 0;
 			}
-		printf("detection_pressure is %f",detection_pressure) ;
+	//	printf("detection_pressure is %f",detection_pressure) ;
 		}
 	/* @@@@ detection pressure for other scenarios to be defined.-----------------------------	
 		else if(detection_scenario==1)
@@ -2742,11 +2785,14 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
     double random_value = (double)rand()/(double)RAND_MAX*(FarmProductionStatus[pro_id][5]);
 	}
 /*=====================CHOOSE WHICH EVENTS?==============================================================*/	
-printf("random value 2 is %f", random_value) ;
+//printf("random value 2 is %f", random_value) ;
 /*===================================WITHIN HERD TRANSMISSION PART STARTS===========================================================================================*/
 	if(random_value<=FarmProductionStatus[pro_id][5])
 	{
 		printf("This is transmission") ;
+		(*c_transmission)++ ;
+	//	printf("c_transmission is %d",*c_transmission) ;
+	//	system("pause") ;
 	//	system("pause") ;
 	//now get the first animal in the production unit
 	   struct animal_node *current_animal;
@@ -2767,7 +2813,7 @@ printf("random value 2 is %f", random_value) ;
 			current_animal->disease_status=1;
 			FarmProductionStatus[pro_id][1]--; //susceptible - 1
 			FarmProductionStatus[pro_id][2]++; //Exposed + 1
-			
+			printf("new infected animal is determined") ;
 			break;
 	    	}
 	    else
@@ -2800,17 +2846,35 @@ printf("random value 2 is %f", random_value) ;
 		}
 		if(counter==random_n)
 		{
+		//	printf("animal found") ;
 			//copy seq
 			// ptr_isolate is pointing NULL, no memory allocated.
 			struct isolate *new_isolate;
+		//	printf("A") ;
 			new_isolate = (struct isolate*)malloc(sizeof( struct isolate ));
+		//	printf("A2") ;
+		//	printf("infecting animal is %lld", infecting_animal->akey) ;
+		//	printf("disease status is %lld", infecting_animal->disease_status) ;
+		//	if(infecting_animal->ptr_isolate==NULL)
+		//	{printf("say yes") ;
+		//	}
+			//	int i= 0 ;  
+			        //    while(infecting_animal->ptr_isolate->sequence[i]!='\0')
+        			//	{
+        		//			printf("%c",infecting_animal->ptr_isolate->sequence[i]) ;
+					//	i++ ;
+				//		}
+				//		printf("that's seq'") ;
 			strcpy(new_isolate->sequence, infecting_animal->ptr_isolate->sequence) ;// copy sequence
+		//	printf("passing seq done") ;
 			new_isolate->d_time = today_date;
 			new_isolate->parent_id = infecting_animal->ptr_isolate->id ;
-			*current_id_isolate = *current_id_isolate + 1 ; // increment isolate id before assigning: this should be done for other occasions to be consistent
+		//	printf("B") ;
+			(*current_id_isolate)++; // increment isolate id before assigning: this should be done for other occasions to be consistent
 			new_isolate->id = *current_id_isolate; 
+		//	printf("C") ;
 			current_animal->ptr_isolate = new_isolate ; // assign the pointer
-		//	printf("New infection is %lld",infecting_animal->akey) ;
+		//printf("New infection is %lld",infecting_animal->akey) ;
 		//	system("pause") ;
 			break;	
 		}
@@ -2836,7 +2900,7 @@ printf("random value 2 is %f", random_value) ;
 			  
 			  add_event_node(event_day, day_to_add, adding_new_event) ; //am I using function here???? Inside function????
 		      }
-	
+	    printf("transmission done") ;
        	}
 	      
 	   
@@ -2846,24 +2910,25 @@ printf("random value 2 is %f", random_value) ;
 	else if(random_value>FarmProductionStatus[pro_id][5]&&random_value<=(FarmProductionStatus[pro_id][5]+FarmProductionStatus[pro_id][7])) // if mutation is selected
 	/*==============MUTATION PART STARTS=================================================================================================================*/
 		{
-			printf("This is mutation") ;
+		//	printf("This is mutation") ;
 		//	system("pause") ;
+		(*c_mutation)++ ;
 			//get random value n which is euql to the number of suscptible or that are subjcted to mutations
 			//get nth animals that are eligible
 		int num_tot_mutatable = (int)(FarmProductionStatus[pro_id][7]/mu) ; //total number of animals that are subjected to mutations
 		int random_n = rand()%num_tot_mutatable+1; //get random number between 1 and num_tot_mutatable
-		printf("A") ;
+	//	printf("A") ;
 		 struct animal_node *current_animal;
-		 printf("B") ;
+	//	 printf("B") ;
 		 current_animal = FarmProductionList[pro_id];
-		 printf("C") ;
+	//	 printf("C") ;
 		 if(current_animal==NULL)
 		 {
 		 	printf("Something wrong! Animals should exist here but not!");
 		 }
 		 else
 		 {
-		 	printf("current animal is not null") ;
+		 //	printf("current animal is not null") ;
 		 	int counter;
 		 	counter = 0;
 		 	while(counter<random_n)
@@ -2881,36 +2946,36 @@ printf("random value 2 is %f", random_value) ;
 				char next_base; // make sure it is just char, not char[], which becomes character string type
 				char current_base ; //get the current base
     			current_base = mutating_isolate->sequence[r_position] ;
-    			printf("current base is %c", current_base) ;
+    	//		printf("current base is %c", current_base) ;
     			if(current_base=='A') // make sure the character is bracketted with '', not " "
 						{
-							printf("Matched!");
+		//					printf("Matched!");
 							next_base= (char)"TGC"[rand()%3];
 	
 						}
 				else if(current_base=='T')
 						{
-						printf("Matched!");
+		//				printf("Matched!");
 						next_base= (char)"AGC"[rand()%3];	
 						}
 				else if(current_base=='G')
 						{
-						printf("Matched!");
+		//				printf("Matched!");
 						next_base= (char)"ATC"[rand()%3];
 						}
 				else if(current_base=='C')
 						{
-						printf("Matched!");
+		//				printf("Matched!");
 						next_base= (char)"ATG"[rand()%3];	
 						}
 				else
 						{
 						printf("Error! This is not eligible base!") ;
 						}
-				printf("Next base is %c", next_base);
+		//		printf("Next base is %c", next_base);
 				mutating_isolate->sequence[r_position] = next_base;
-				printf("Now base is %c", mutating_isolate->sequence[r_position]);
-				mutating_isolate->num_mut++; //mutation count+
+		//		printf("Now base is %c", mutating_isolate->sequence[r_position]);
+				(mutating_isolate->num_mut)++; //mutation count+
 				//@ have to add times of mutation here
 				/* MUTATION MODEL ENDS
 				======================================================================================================*/
@@ -2940,7 +3005,8 @@ printf("random value 2 is %f", random_value) ;
 	else //else detection
 	{
 		printf("This is detection") ;
-		system("pause") ;
+		//system("pause") ;
+		(*c_detection)++ ;
 		struct animal_node *current_animal;
 		 current_animal = FarmProductionList[pro_id];
 		 struct animal_node *previous_animal;
@@ -2958,9 +3024,12 @@ printf("random value 2 is %f", random_value) ;
 		 }
 		 else //else1
 		 {
+		 	printf("This farm has animals and not detected yet") ;
 		 	while(current_animal!=NULL) // until it reaches till the end
 		 	{
 		 	if(disease==1&&(current_animal->disease_status==2||current_animal->disease_status==1)) //if FMD infectious: for now if TB no passive detection occurs, if needed, add this: "(disease==0&&current_animal->disease_status>=2)||(" before hand and ")" in the end
+			  {
+			  
 			  if(detection_scenario==0)
 			  {
 			  	//random_value = ((double)rand()/(double)RAND_MAX) ; //get random value for determining if this animal would be detected or not
@@ -2969,32 +3038,38 @@ printf("random value 2 is %f", random_value) ;
 			  	 //     	current_animal = current_animal->next_node ; //next animal
 			  	 //   }
 			  	   	// first obtain seq data
-			  	   		head_list_isolate[*nth_isolate] = current_animal->ptr_isolate ; //handover the isolated data @@@ have to define nth_isolate and include it in the function argument
-			  			IsolateData[*nth_isolate][0] = current_animal->akey ;
-			  			IsolateData[*nth_isolate][1] = current_animal->current_pro_id ;
-			  			IsolateData[*nth_isolate][2] = today_date;
-			  			IsolateData[*nth_isolate][3] = current_animal->ptr_isolate->d_time;
-			  			IsolateData[*nth_isolate][4] = current_animal->ptr_isolate->id;
-			  			IsolateData[*nth_isolate][5] = current_animal->ptr_isolate->parent_id;
-			  			IsolateData[*nth_isolate][6] = current_animal->ptr_isolate->num_mut;
+			  	   		//head_list_isolate[*nth_isolate] = current_animal->ptr_isolate ; //handover the isolated data @@@ have to define nth_isolate and include it in the function argument
+			  			IsolateData[*nth_isolate][0] = (double)(current_animal->akey) ;
+			  			//printf("IsolateData akey is %lld",IsolateData[*nth_isolate][0]);
+			  			//printf("current akey is %lld",current_animal->akey);
+			  		//	system("pause") ;
+			  			IsolateData[*nth_isolate][1] = (double)(current_animal->current_pro_id) ;
+			  			IsolateData[*nth_isolate][2] = (double)(today_date);
+			  			IsolateData[*nth_isolate][3] = (double)(current_animal->ptr_isolate->d_time);
+			  			//printf("IsolateData d_time is %lld",IsolateData[*nth_isolate][3]);
+			  			//system("pause") ;
+			  			IsolateData[*nth_isolate][4] = (double)(current_animal->ptr_isolate->id);
+			  			IsolateData[*nth_isolate][5] = (double)(current_animal->ptr_isolate->parent_id);
+			  			IsolateData[*nth_isolate][6] = (double)(current_animal->ptr_isolate->num_mut);
 			  			IsolateData[*nth_isolate][7] = 1 ; //detected
 			  			
 					//	IsolateSeqData[*nth_isolate][0] = current_animal->ptr_isolate->id ;
 					//strcpy(new_isolate->sequence, infecting_animal->ptr_isolate->sequence) ;/
 			            IsolateSeqData[*nth_isolate] = &(current_animal->ptr_isolate->sequence);
+						printf("isolate is %d", *nth_isolate) ;
 						int i= 0 ;  
-			            while(IsolateSeqData[*nth_isolate][i]!=NULL)
+			          while(IsolateSeqData[*nth_isolate][i]!='\0')
         				{
         					printf("%c",IsolateSeqData[*nth_isolate][i]) ;
 						i++ ;
 						}
 						system("pause") ;
 						  //IsolateData[*nth_isolate][8] = current_animal->ptr_isolate->sequence ;
-			  			*nth_isolate = *nth_isolate + 1 ; // increment isolate counter by 1
+			  			(*nth_isolate)++; // increment isolate counter by 1
 			  			
 			  			
 			  	// Change the disease status and number recorded in FarmProductionStatus
-			  			current_animal->disease_status= 3; // becomes immune - then have to cancel the event for them to beome immune or just skip it by saying only if no immune , immune occurs			  	
+			  						  	
 					if(current_animal->disease_status==1)
 					{
 						FarmProductionStatus[pro_id][2] -- ;
@@ -3006,8 +3081,11 @@ printf("random value 2 is %f", random_value) ;
 			  			FarmProductionStatus[pro_id][4]++ ; //One increase in the recovered
 					  }
 			  			
-			  			current_animal = current_animal->next_node ; //next animal
-			  	}
+			  		current_animal->disease_status= 3; // becomes immune - then have to cancel the event for them to beome immune or just skip it by saying only if no immune , immune occurs	
+			  		current_animal->ptr_isolate = NULL ;
+				  }
+			  }
+			  current_animal = current_animal->next_node ; //next animal
 			  } //while loop done
 			  FarmData[farm_id][6] = 1 ; //becomes detected
 			  	// and add a movement-ban-lift a month later
@@ -3017,7 +3095,7 @@ printf("random value 2 is %f", random_value) ;
 		      			adding_new_event->src_pro_id = pro_id; 
 		      			adding_new_event->des_pro_id = -100;
 		      			adding_new_event->src_testarea=-100;
-			  			adding_new_event->event_type=10;//occult to detectable happens
+			  			adding_new_event->event_type=10;//movement ban lift
 			  
 			 			 add_event_node(event_day, floor(today_date)+30, adding_new_event) ;
 		} // else1 done
@@ -3159,15 +3237,16 @@ int export_IsolateData(char* OutIsolateDataFile, double **IsolateData, char *Iso
 {
 	FILE *Out = fopen(OutIsolateDataFile, "w") ;
 	int line_num, col_num ;
-	int i = 0;
+	
 	for (line_num = 0 ; line_num < num_max_isolate; line_num ++)
 	{
+		int i = 0;
 		for (col_num = 0;col_num <num_isolate_vars ; col_num++ )
 		
 		{
-	    fprintf(Out,"%lld,",IsolateData[line_num][col_num]);
+	    fprintf(Out,"%f,",IsolateData[line_num][col_num]);
         }
-        while(IsolateSeqData[line_num][i]!=NULL)
+        while(IsolateSeqData[line_num][i]!='\0')
         {
         	fprintf(Out,"%c",IsolateSeqData[line_num][i]) ;
 			i++ ;
