@@ -129,6 +129,8 @@ char SequenceData[] = "FJ785304_1_VP1.txt"; //Seq file for FMD
 char OutputXML[] = "test.xml"; //Output XML file name
 const char* OutIsolateDataFile_origin = "Sequence_data_iteration";
 const char* extension = ".csv" ; 
+const char* OutNexusFile_origin = "Nexus";
+const char* extension_nexus = ".nex" ;
 
 int num_isolate_vars = 8;
 int num_isolate_seq_vars = 2;
@@ -218,7 +220,7 @@ void move_production_type();
 void read_sequence_data() ;
 int createdata();
 void JukesCantor();
-
+int export_seq_nexus() ;
 /* Variables related to farm and FarmProductionStatus*/
 //int num_farms = 16950; // number of farms present at 2000 july 
 
@@ -422,15 +424,21 @@ for(iteration=0; iteration<tot_iterations; iteration++)
       
     //  printf("nth_slaughter is %d", *nth_slaughter);
       char* OutIsolateDataFile;
-      
+      char* OutNexusFile;
       char number[1] ;
       
+      // making file name for IsolateData
       snprintf(number, 1, "%d", iteration) ;
       OutIsolateDataFile = malloc(strlen(OutIsolateDataFile_origin)+1+1+4) ; //size of _origin, iteration, /0(null terminate), and extension(csv)
       strcpy(OutIsolateDataFile, OutIsolateDataFile_origin);
       
       strcat(OutIsolateDataFile, number) ;
       strcat(OutIsolateDataFile, extension) ;
+      
+      OutNexusFile = malloc(strlen(OutNexusFile_origin)+1+1+4) ; //size of _origin, iteration, /0(null terminate), and extension(csv)
+      strcpy(OutNexusFile, OutNexusFile_origin);
+      strcat(OutNexusFile, number) ;
+      strcat(OutNexusFile, extension_nexus) ;
 	  srand((unsigned)time(NULL));	
        
       	
@@ -1503,6 +1511,7 @@ count_farms_infected_detected(FarmData,OutPut,num_total_farms,iteration);
    printf("transmission happened %d", *c_transmission) ;
     printf("mutation happened %d", *c_mutation) ;
      printf("detection happened %d", *c_detection) ;
+     export_seq_nexus(OutNexusFile,num_max_isolate,seq_length,IsolateData,IsolateSeqData) ;
 }//END OF EACH ITERATION
 
 /*===========END OF ONE ITERATION==============================================================================================================================================*/
@@ -3256,5 +3265,44 @@ int export_IsolateData(char* OutIsolateDataFile, double **IsolateData, char *Iso
     }
     fclose(Out) ;
     return 0 ;
+	
+}
+
+/*-------------------------------------------------------------------------------------
+/* EXPORT SEQUENCE IN NEXUS FORMAT------------------------------------------------------
+/*-------------------------------------------------------------------------------------*/
+int export_seq_nexus(char* OutNexusFile, int num_max_isolate, int seq_length,double **IsolateData, char *IsolateSeqData[])
+{
+	int line_num, col_num,i ;
+	double value1,value2 ;
+	FILE *Out = fopen(OutNexusFile,"w") ;
+	fprintf(Out,"#nexus\n");
+	fprintf(Out,"begin data;\n");
+	fprintf(Out,"Dimensions NTax=%d NChar =%d;\n",num_max_isolate,seq_length-1);
+	fprintf(Out,"Format DataType=DNA missing=? gap=-;\n");
+	fprintf(Out,"matrix\n");
+	for(line_num=0; line_num < num_max_isolate; line_num++)
+	{
+		i = 0 ;
+		//if(IsolateData[line_num][7]==1 //only if isolated
+		//{}
+		value1 = roundf(IsolateData[line_num][3]*100)/100 ;
+		value2 = roundf(IsolateData[line_num][2]*100)/100 ;
+		if(value2>0)
+		{
+			fprintf(Out,"Isolate%f_%f ",value1,value2) ;
+		while(IsolateSeqData[line_num][i]!='\0')
+        {
+        	fprintf(Out,"%c",IsolateSeqData[line_num][i]) ;
+			i++ ;
+		}
+		fprintf(Out,"\n");
+		}
+			
+	}
+	fprintf(Out,";\n");
+	fprintf(Out,"end;");
+	fclose(Out);
+	return 0;
 	
 }
