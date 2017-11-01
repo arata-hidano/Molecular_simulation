@@ -54,8 +54,8 @@ Movement (dynamic memory)
 int num_total_farms2 = num_total_farms ;
 int const num_animals = 3624420;  // as of 2000 July 1st
 int const num_total_animals = 16534951;  
-#define sim_years 5 //@@@ 
-int num_max_isolate = 12000 ;  // should change this
+#define sim_years 10 //@@@ 
+int num_max_isolate = 50000 ;  // should change this
 int seq_length_FMD = 633 ;
 #define seq_length_TB 700 //@@@length of TB gene to be checked
 int *died_out;
@@ -671,6 +671,11 @@ for (i=0; i < num_animals; i++)
         	FarmData[current_farm][9] = -1 ; // this is seed farm
         	FarmData[current_farm][10] = 0 ; // infected time is 0
         	(*current_id_isolate)++;
+        	if(*current_id_isolate>=num_max_isolate)
+        	{
+        		printf("max isolate reached") ;
+        		system("pause") ;
+			}
 		}
 		else
 		{
@@ -3231,6 +3236,7 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 			head_list_isolate[*current_id_isolate]->pro_id = pro_id;
 			head_list_isolate[*current_id_isolate]->isolated = 0;
 			head_list_isolate[*current_id_isolate]->parent_id = infecting_animal->ptr_isolate->id ;
+			head_list_isolate[*current_id_isolate]->akey = current_animal->akey ;
 		//	printf("B") ;
 			 // increment isolate id before assigning: this should be done for other occasions to be consistent
 			head_list_isolate[*current_id_isolate]->id = *current_id_isolate; 
@@ -3242,6 +3248,11 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 		//printf("New infection is %lld",infecting_animal->akey) ;
 		//	system("pause") ;
 		(*current_id_isolate)++;
+		if(*current_id_isolate>=num_max_isolate)
+        	{
+        		printf("max isolate reached") ;
+        		system("pause") ;
+			}
 			break;	
 		}
 		else
