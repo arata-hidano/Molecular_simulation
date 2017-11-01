@@ -106,7 +106,7 @@ int num_tests_vars = 2;
 int sim_days= 365*sim_years; // X years
 //341 farms detected TB in this 3 years
 long long i, j;
-int iteration;
+int iteration = 0;
 int tot_iterations = 10;
 int num_OutPut = 2; //infected and detected
 char OutPutFile[] = "OutPut2.csv";
@@ -409,7 +409,8 @@ struct event_node* event_day[sim_days]; // a pointer to a struct of event
 while(iteration<tot_iterations)
 //for(iteration=0; iteration<tot_iterations; iteration++)
 {//iteration starts
-clock_t begin = clock() ;
+printf("ite is %d\n",iteration);
+//clock_t begin = clock() ;
 	srand((unsigned)time(NULL));		    	
     //  printf("Iteration started");
       int var0 = 0;
@@ -1206,7 +1207,7 @@ int j = 0;
 /*=======SIMULATION STARTS=================================================================================================================================================================*/	
 while((today_date<sim_days)&& (*died_out==0))
 {
-//printf("this is day %f\n", today_date);
+printf("this is day %f\n", today_date);
 if(today_date>365)
 					{
 					detection_pressure_origin = detection_pressure_origin1 ;
@@ -1604,7 +1605,7 @@ if(today_date>365)
   //  printf("mutation happened %d", *c_mutation) ;
   //   printf("detection happened %d", *c_detection) ;
   //   printf("between farm tras happened %d",*nth_between) ;
-    // export_seq_nexus(OutNexusFile,nth_isolate,nth_isolate_detected,seq_length,IsolateData,IsolateSeqData) ;
+   // export_seq_nexus(OutNexusFile,nth_isolate,nth_isolate_detected,seq_length,IsolateData,IsolateSeqData) ;
      free(OutNexusFile) ;
      if((*nth_isolate_detected)>=15)
      {
@@ -1640,11 +1641,12 @@ if(today_date>365)
 		}
 		
 	}
+//	clock_t end = clock() ;
+//double time_spent = (double)(end-begin)/CLOCKS_PER_SEC ;
+//printf("time is %f", time_spent) ;
 //	printf("D") ;
 }//END OF EACH ITERATION
-clock_t end = clock() ;
-double time_spent = (double)(end-begin)/CLOCKS_PER_SEC ;
-printf("time is %f", time_spent) ;
+
 
 /*===========END OF ONE ITERATION==============================================================================================================================================*/
 
