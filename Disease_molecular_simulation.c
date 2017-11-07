@@ -1851,7 +1851,8 @@ else // if previous node is null
 if (stop == 0) // if the movement is still allowed
 {
 printf("non-stop\n") ;
-
+des_farm_id = floor((current_event->des_pro_id)/3);
+//printf("pro id %lld", current_event->des_pro_id) ;
   	
   	/*===========Add this move to Farm_ptr_inf_move if the source farm is infected and if this move is not yet recorded*/
   	if(FarmData[src_farm_id][4]==1) // if this farm is infected
@@ -1874,8 +1875,7 @@ printf("non-stop\n") ;
 	  }
   		//system("pause") ;
   	//	printf("This %lld farm is infected",src_farm_id) ;
-  		des_farm_id = floor(current_event->des_pro_id/3);
-  	//	printf("pro id %lld", current_event->des_pro_id) ;
+
   		if(FarmData[des_farm_id][9]==-1)
   		{
   			FarmData[des_farm_id][9] = src_farm_id; // record who infected this farm
@@ -1917,7 +1917,7 @@ printf("non-stop\n") ;
 	/*========NEEDS CHANGE IF INFECTED TO BE RECORDED DONE=======================*/
 	  } // recording infected movements done
   	       
-	       if (moving_animal -> previous_node != NULL)
+	if (moving_animal -> previous_node != NULL)
 	          { // if moving animal's previous node is conencted to other animal
 	    //      printf("A starts");
 	  //  printf("C\n") ;
@@ -1939,7 +1939,7 @@ printf("non-stop\n") ;
 		           }
 		//       printf("A ends");    
 	           }
-	        else // if previous node is null 
+	else // if previous node is null 
 	           {
 	    //       	printf("D\n") ;
 	        //  	printf("previous node is NULL") ;
@@ -1993,14 +1993,14 @@ printf("non-stop\n") ;
 int des_pro_id = current_event->des_pro_id;
     if (FarmProductionList[des_pro_id] == NULL)
     {
-    //	printf("F\n") ;
+    	
     	FarmProductionList[des_pro_id] = moving_animal;
     	moving_animal -> previous_node = NULL;
     	moving_animal -> next_node = NULL;
 	}
 	else
 	{
-	//	printf("G\n") ;
+		
 	   struct animal_node *new_next_animal ;
 	   
 	   	new_next_animal = FarmProductionList[des_pro_id] ;
@@ -2008,11 +2008,12 @@ int des_pro_id = current_event->des_pro_id;
 	   	moving_animal -> next_node = new_next_animal;
 	   	moving_animal -> previous_node = NULL ;
 	   	FarmProductionList[des_pro_id] = moving_animal ;
-	   	//printf("G2\n") ;
+	   	
 	}
 	FarmProductionStatus[des_pro_id][0]++;
 	//int current_status = moving_animal->disease_status ;
 	FarmProductionStatus[des_pro_id][disease_status+1]++;
+
 	if(disease_status>=2)
 	{
 		FarmData[des_farm_id][disease_status+5]++;
@@ -2021,13 +2022,16 @@ int des_pro_id = current_event->des_pro_id;
 	if(FarmData[des_farm_id][4]==0&&(disease_status==1||disease_status==2))
 		{
 			FarmData[des_farm_id][4] = 1 ;
+			printf("now farm infected") ;
 		}
-	
+
 	if(FarmData[des_farm_id][7]!=(FarmProductionStatus[des_farm_id*3][3]+FarmProductionStatus[des_farm_id*3+1][3]+FarmProductionStatus[des_farm_id*3+2][3]))
 		      {
+		      	
 		      	printf("L2539: now FarmD is %lld and FPS is %f - %f - %f",FarmData[des_farm_id][7],FarmProductionStatus[des_farm_id*3][3],FarmProductionStatus[des_farm_id*3+1][3],FarmProductionStatus[des_farm_id*3+2][3]);
 		      	system("pause") ;
 			  }
+			 
 //	if(current_status >= 1 && current_status<=2)
 //	{
 //		printf("transmission to new pro id %lld and inf is now %f",des_pro_id,FarmProductionStatus[des_pro_id][current_status+1]) ;
@@ -2038,9 +2042,7 @@ int des_pro_id = current_event->des_pro_id;
 //	{
 //		printf("why null?") ;
 //	}
-//	printf("pro id %lld", des_pro_id) ;
 	moving_animal->current_pro_id=des_pro_id;
-//	printf("H\n") ;
 } // if stop==0 ENDS
 
 printf("movement done\n") ;
