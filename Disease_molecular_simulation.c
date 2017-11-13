@@ -90,7 +90,7 @@ long num_moves = 8860567 ; //this is from 2JULY2000 AND WITH MISSING VALUES
 int num_moves_vars = 6; // serial_akey, date, src_serial_hid, des_serial_hid, age_type, src_testarea
 
 
-char BirthDataFile[] = "/C_run/birth_table_since2000july.csv";
+char BirthDataFile[] = "birth_table_since2000july.csv";
 int num_births = 9667100 ;
 int num_births_vars = 5;// akey, bdate, src_farm, sex, breed 
 
@@ -101,7 +101,7 @@ char TestDataFile[] = "/C_run/tb_test_schedule_export.csv";*/
 int random_year ;
 
 //slaughter
-char SlaughterDataFile[] = "/C_run/serial_akey_culled.csv";
+char SlaughterDataFile[] = "serial_akey_culled.csv";
 long num_slaughter = 6165850 ;
 int num_slaughter_vars = 2 ;
 
@@ -116,21 +116,21 @@ int num_OutPut = 2; //infected and detected
 char OutPutFile[] = "OutPut2.csv";
 /* Variables related to disease*/
 int day_S3toS4, day_S2toS3;
-int max_S3toS4_TB = 10*365; // max day to detect - 1 Conlan(2014) modified
+int max_S3toS4_TB = 365; // max day to detect - 1 Conlan(2014) modified
 int max_S2toS3_TB = 0.4*365; // max day to occult - 1  Brooks-Pollock's parameter 11.1
 int max_S3toS4_FMD = 200 ;
 int max_S2toS3_FMD = 100;
 int max_S2toS3, max_S3toS4, day_to_S3, day_to_S4 ;
 int movement_ban_days = 60 ;
-double Se_S3 = 0.2;
-double Se_S4 = 0.76;
+double Se_S3 = 0.5;
+double Se_S4 = 0.85;
 double Se_slaughter = 0.8 ;// @@@@ have to revise this value
 double beta_a_FMD = 0.5;//within-herd transmission parameter
-double beta_a_TB = 12.5/1000 ;
+double beta_a_TB = 0.3 ;
 double beta_a ;
 double beta_b = 0;//wildlife transmission parameter
 double mu_FMD = 2.7*0.001*633/365; // disease==1 use substitution rate used in Hall, which was further converted to the substitution rate for the whole VP1 seq and per day
-double mu_TB = 0.00001*seq_length_TB/365 ;
+double mu_TB = 0.003*seq_length_TB/365 ;
 double mu ;
 double detection_pressure_origin ;
 double detection_pressure_origin1 = 0.3/30;
@@ -142,9 +142,9 @@ int *current_id_isolate; // a pointer to a memory that keeps the track of isolat
 /*File names*/
 char SequenceData[] = "FJ785304_1_VP1.txt"; //Seq file for FMD
 char OutputXML[] = "test.xml"; //Output XML file name
-const char* OutIsolateDataFile_origin = "Sequence_data_iteration";
+const char* OutIsolateDataFile_origin =  ""  ;//"Sequence_data_iteration";
 const char* extension = ".csv" ; 
-const char* OutNexusFile_origin = "Nexus";
+const char* OutNexusFile_origin = "";// "Nexus";
 const char* extension_nexus = ".nex" ;
 
 int num_isolate_vars = 8;
@@ -256,6 +256,8 @@ int main(void){
       		beta_a = beta_a_TB ;
       		seq_length = seq_length_TB + 1;
       		mu = mu_TB ;
+      		const char* OutIsolateDataFile_origin = "TB_Sequence_data_iteration";
+      		const char* OutNexusFile_origin = "TB_Nexus";
       	}
 		else if(disease==1)
 		{
@@ -264,6 +266,8 @@ int main(void){
 			beta_a = beta_a_FMD ;
 			seq_length = seq_length_FMD + 1 ;
 			mu = mu_FMD ;
+			const char* OutIsolateDataFile_origin = "FMD_Sequence_data_iteration";
+      		const char* OutNexusFile_origin = "FMD_Nexus";
 		  } 
 
 char Seq_master[seq_length]; 
@@ -352,6 +356,7 @@ char Seq_master[seq_length];
 				SlaughterData[i] = (long long*)malloc(sizeof(long long)*num_slaughter_vars) ;
 			}
 		   read_slaughter_data(SlaughterDataFile, SlaughterData, num_slaughter) ;
+		  // printf("SlaughterData is %lld %lld %lld", SlaughterData[0][1], SlaughterData[1][1], SlaughterData[2][1]);
 /*2.7 Prepare sequence data*/
 if(disease==1)
 {
@@ -404,17 +409,10 @@ struct animal_node *inf_slaughtered[sim_days] ; // a pointer to animal_node that
 struct animal_node* FarmProductionList[num_farm_production]; // pointer to first animal at each farm-production
 struct inf_move *Farm_ptr_inf_move[num_total_farms] = {NULL}; // this records moves that had infected animals from the source farm
 struct event_node* event_day[sim_days]; // a pointer to a struct of event
-  
-  /*Parameters*/
-
-		  
-	 
-    
-    
-    
 /*===============================================================================================================================================================================================================
 ------------------START OF THE SIMULATION-----------------------------------------------------------
 ============================================================================================*/  
+
 
 
 
@@ -486,9 +484,7 @@ for(i = 0; i < num_farm_production; i++)
 	  
        for(i=0; i < num_total_animals; i++)
 		{
-			animal_node_pointer[i] = (struct animal_node*)malloc(sizeof(struct animal_node)) ;
-				//animal_node_pointer[i]= NULL ;
-			animal_node_pointer[i]->akey = -1; // initialisation
+			animal_node_pointer[i] = NULL ;
 		}
       	
       	int var6 = 0;
@@ -582,6 +578,7 @@ for (i=0; i < num_animals; i++)
                 
                 //new_node = (struct animal_node*)malloc(sizeof( struct animal_node )); 
                 long long current_akey = (long long)AnimalData[i][0];
+                animal_node_pointer[current_akey] =(struct animal_node*)malloc(sizeof(struct animal_node)) ;
                 animal_node_pointer[current_akey]->akey = current_akey;
                 animal_node_pointer[current_akey]->age_day = (int)AnimalData[i][2];
                 animal_node_pointer[current_akey]->type = (int)AnimalData[i][3];
@@ -847,8 +844,9 @@ int current_event_type ;
 				new_event -> next_node = NULL;   
                 /* ADD THE NEW NODE TO THE ARRAY */
                  add_event_node(event_day, current_day, new_event) ;
-                 if (animal_node_pointer[current_akey]->akey == -1)//if this animal does not exist initially
+                 if (animal_node_pointer[current_akey]==NULL)//if this animal does not exist initially
                  {
+                 	animal_node_pointer[current_akey] =(struct animal_node*)malloc(sizeof(struct animal_node)) ;
                  		FarmProductionStatus[current_pro_id][0]++;
                  		FarmProductionStatus[current_pro_id][1]++; //assume that these animals are susceptible
                  		animal_node_pointer[current_akey]->akey=current_akey;
@@ -897,7 +895,7 @@ int current_event_type ;
                 add_event_node(event_day, current_day, new_event) ;
                  
                 //THEN CREATE ANIMAL NODE
-                
+                animal_node_pointer[current_akey] =(struct animal_node*)malloc(sizeof(struct animal_node)) ;
                 animal_node_pointer[current_akey]->akey = current_akey;
                 animal_node_pointer[current_akey]->age_day = 0;
                 animal_node_pointer[current_akey]->type = 0;
@@ -924,9 +922,13 @@ int current_event_type ;
           if(current_day<sim_days)
           {
           	long long current_akey = (long long)SlaughterData[i][0] ;//akey
-		  if (animal_node_pointer[current_akey]==NULL)//if this animal does not exist initially
-                 {
-                struct event_node *new_event;
+          //	printf("akey is %lld\n",current_akey);
+          //	system("pause") ;
+		 // if (animal_node_pointer[current_akey]==NULL)//wait, do I need this?
+          //       {
+          if(current_akey <=num_total_animals)
+          {
+          	struct event_node *new_event;
                 new_event = (struct event_node*)malloc(sizeof( struct event_node )); 
                 new_event -> event_type = 4;          
                 new_event -> akey = current_akey;
@@ -935,7 +937,9 @@ int current_event_type ;
                 new_event -> src_testarea = -100 ;
 				new_event -> next_node = NULL;          
                 add_event_node(event_day, current_day, new_event) ;
-            	}
+		  }
+                
+            //	}
             }
            }
 /*=================ADD SLAUGHTER DONE============================================================*/
@@ -1043,7 +1047,7 @@ if(today_date-current_year*365==0) // beginning of the year
     new_event->src_pro_id = -100;
     new_event->next_node = NULL;
     new_event->src_testarea = -1 ;
-    printf("adding test") ;
+    //printf("adding test") ;
 	add_event_node(event_day, (int)(today_date+random_date), new_event) ;
 }
 // add testing done	
@@ -1072,24 +1076,43 @@ if(today_date-current_year*365==0) // beginning of the year
      current_event = event_day[next_non_markov_date];
      while(current_event!=NULL)
      {
-     //	printf("current event is %d", current_event->event_type) ;
-     //	if(current_event->akey==1182045)
-     //	{
-     //		printf("this animal is from %lld to %lld with type %d",current_event->src_pro_id, current_event->des_pro_id,current_event->event_type);
-	//	    printf("and current_pro_id is %lld and day %d",animal_node_pointer[1182045]->current_pro_id, today_date);
-	//	    printf("previous animal is %lld and next animal is %lld",animal_node_pointer[1182045]->previous_node->akey,animal_node_pointer[1182045]->next_node->akey);
-	//	 }
-	// printf("current event is %d", current_event->event_type);
+  //  printf("current event is %d", current_event->event_type) ;
+    long long current_akey = current_event->akey ;
+  //  printf("current akey is %lld\n", current_akey) ;
+  //  printf("current pro id is %lld\n",current_event->src_pro_id) ;
+    if (current_event-> event_type ==5 )//if this is testing
+	      {
+	 		
+	 	   test_farms(FarmData,FarmProductionStatus, FarmProductionList, event_day, current_event,Se_S3, Se_S4, current_year, next_non_markov_date) ; // get the testing schedule id
+	      } 
+	else if(current_event->event_type==10)
+		  {
+		  	 long long src_farm_id = floor(current_event->src_pro_id/3) ;
+		  	 FarmData[src_farm_id][6] = 0 ; // farm detected status goes back to 0
+		  	 
+		  }
+     else if(animal_node_pointer[current_akey]!=NULL)
+     {
+     	if(animal_node_pointer[current_akey]->current_pro_id!=-10)
+     	{
+		 
 	/*==============EVENT EITHER MOVEMENT, NEW BIRTH OR CULL/DEATH================================*/
 	   if (current_event-> event_type <= 4 ) // if movement or new birth or cull death
 	      {
-	      	//printf("event is %lld\n", current_event->event_type) ;
-	      	long current_akey = current_event->akey ;
+	      	
+	      	
+	      	
 	        long long src_pro_id = animal_node_pointer[current_akey]->current_pro_id ;
+	       // printf("A2") ;
 	        long long src_farm_id = floor(src_pro_id/3) ;
-	        int pre_move_det_status = FarmData[src_farm_id][6] ; //if detected 1, non detected 0
+	        //printf("A3") ;
+	    //   printf("farm id is %lld", src_farm_id) ;
+	        long long pre_move_det_status = FarmData[src_farm_id][6] ; //if detected 1, non detected 0
+	       // printf("A4") ;
 	        int testarea_num = current_event->src_testarea ;
-
+	       // printf("A5") ;
+	       
+			
 			move_animal_unit(FarmProductionList,FarmData,FarmProductionStatus,event_day,current_event,animal_node_pointer,Se_S3,Se_S4, disease, Se_slaughter, next_non_markov_date,
 		    nth_slaughter, nth_between,inf_slaughtered, head_list_isolate, Farm_ptr_inf_move
 			); // function to move animals
@@ -1122,22 +1145,14 @@ if(today_date-current_year*365==0) // beginning of the year
 	//	printf("movement done\n") ;
 	      } // if movement done
 	/*=====================EVENT MOVEMENT, BIRTH, CULL/DEATH DONE===========================================*/
-	   else if (current_event-> event_type ==5 )//if this is testing
-	      {
-	   //  printf("testing");		
-	 	   test_farms(FarmData,FarmProductionStatus, FarmProductionList, event_day, current_event,Se_S3, Se_S4, current_year, next_non_markov_date) ; // get the testing schedule id
-		 	 // if false-positive, they test only reacter animals?
-		    //then no-FP + no-detection, no-FP+detection, FP+no-detection, FP+detection
-	        //printf("test done") ;	
-	        
-	      } 
+	   
 		    // if testing is happening, check all animals with test accuracy, then pick up test positive ones.
 		    //Record information of positive animal (age, region of herd etc) and cull it.
 		    //For positive herds, do follow up testing
 	/*===============UPDATE DISEASE STATUS========================================================================*/
 	   else if (current_event-> event_type == 6||current_event-> event_type == 7) //if updating disease status
 	      {
-	      	printf("event is %lld today is %d", current_event->event_type,next_non_markov_date) ;
+	     // 	printf("event is %lld today is %d", current_event->event_type,next_non_markov_date) ;
 	      	
 	   //   printf("updating disease status") ;
 	      animal_akey = current_event-> akey ;
@@ -1170,6 +1185,7 @@ if(today_date-current_year*365==0) // beginning of the year
 			  if(FarmData[current_farm][7]<=0)
               {
               	printf("L1392:inf is %lld farm is %ld\n",FarmData[current_farm][7],current_farm) ;
+              	system("pause") ;
               }
 		      
 		      if(day_to_add<sim_days)
@@ -1235,13 +1251,15 @@ if(today_date-current_year*365==0) // beginning of the year
 	      //	system("pause");
 		  }
 	/*================Movement-ban lift==============================================================================*/
-		  else if(current_event->event_type==10)
-		  {
-		  	 long long src_farm_id = floor(current_event->src_pro_id/3) ;
-		  	 FarmData[src_farm_id][6] = 0 ; // farm detected status goes back to 0
-		  	 
-		  }
-	      
+		 
+	}
+
+	else
+	{
+	//	printf("This animal is already slaughtered\n");
+		//system("pause") ;
+	 }
+}	
 		struct event_node *previous_event;
 		//previous_event =  (struct event_node*)malloc(sizeof( struct event_node )); // passing a pointer that points to a memory allocated dynamically
 	   previous_event = current_event ; //rewire to the next event
@@ -1254,7 +1272,7 @@ if(today_date-current_year*365==0) // beginning of the year
        }
        else
        {
-      // 	printf("next event is NULL") ;
+     // 	printf("next event is NULL") ;
 	   }
 	   event_day[next_non_markov_date] = current_event;
 	 
@@ -1302,6 +1320,10 @@ if((*nth_isolate_detected)>=15)
      	iteration++ ;
      	export_IsolateData(OutIsolateDataFile, OutNexusFile, head_list_isolate, num_max_isolate, nth_isolate_detected, seq_length) ;
 	 }
+	 else
+	 {
+	 	printf("sample size is %d\n", *nth_isolate_detected) ;
+	 }
    
    free(OutIsolateDataFile) ;
  //  printf("transmission happened %d", *c_transmission) ;
@@ -1314,8 +1336,12 @@ if((*nth_isolate_detected)>=15)
 //	 printf("A") ;
 	 for(i=0; i < num_total_animals; i++)
    	 {
-   	 	animal_node_pointer[i]->ptr_isolate=NULL ; // initialise
+   	 	if(animal_node_pointer[i]!=NULL)
+   	 	{
+   	 			animal_node_pointer[i]->ptr_isolate=NULL ; // initialise
    	 	free(animal_node_pointer[i]);
+			}
+   	 
 		}
 	//	printf("B") ; 
 		i = 0 ;
@@ -1734,17 +1760,18 @@ void visualize_animals(struct animal_node *FarmProductionList[], int production_
 /* MOVE ANIMAL NODE FROM ONE TO OTHER FARM */
 /* -------------------------------------------------------------------------- */
 void move_animal_unit(struct animal_node *FarmProductionList[],long long **FarmData,double **FarmProductionStatus,struct event_node *event_day[], struct event_node *current_event, 
-struct animal_node **animal_node_pointer,double Se_occult, double Se_detect, int disease, double Se_slaughter, double date, int *nth_slaughter, int *nth_between,
+struct animal_node **animal_node_pointer,double Se_occult, double Se_detect, int disease, double Se_slaughter, int date, int *nth_slaughter, int *nth_between,
 struct animal_node *inf_slaughtered[], struct isolate **head_list_isolate, struct inf_move *Farm_ptr_inf_move[])
 {
-	int today_date = (int)date;
+	int today_date = date;
 	int current_event_type = current_event->event_type;
+	//printf("event is %d", current_event_type) ;
 	long long current_akey = current_event->akey ;
 	double random_value;
 	long long des_farm_id,src_farm_id ;
 	int stop = 0;
 	struct animal_node *moving_animal;
-	long src_pro_id ;
+	long long src_pro_id ;
 	int disease_status ;
 if(animal_node_pointer[current_akey]==NULL)
 	{
@@ -1764,44 +1791,67 @@ else //else animal_node_pointer[] is not NULL
 
 	
  /*========Movement to slaughter==============================================================================================================*/	
- if(current_event_type==4 && (animal_node_pointer[current_akey]->current_pro_id!=-10)) //slaughter/death
+ if(current_event_type==4) //slaughter/death
  {
+ //	printf("slaughter event");
+ 	//system("pause") ;
+   
+ 	if(src_pro_id!=-10)
+ 	{
  /*	if(src_pro_id==69196)
  	{
  		printf("L1696: T %f S %f E %f I %f", FarmProductionStatus[69196][0],FarmProductionStatus[69196][1],FarmProductionStatus[69196][2],FarmProductionStatus[69196][3]) ;
         //system("pause") ;
 	 }*/
  	//change FarmProductionStatus values
+ //	printf("pro id is %lld",src_pro_id) ;
  	FarmProductionStatus[src_pro_id][0]--;
  	FarmProductionStatus[src_pro_id][disease_status+1]--; //minus 1
  	if(disease_status>=2) //if TB and the animal is REACTIVE OR INFECTIOUS: No slaughter inspection for FMD.
  	{
+ 	//	printf("Farm det is %lld", FarmData[src_farm_id][6]) ;
  		if(disease==0 && FarmData[src_farm_id][6]==0)//if TB and not detected yet
  		{
- 		random_value = (double)(rand()+1)/(double)(RAND_MAX+1) ;
+ 		//	printf("almost detection") ;
+ 		random_value = (double)rand()/(double)RAND_MAX ;
  			if(random_value<=Se_slaughter)
  			{
  			FarmData[src_farm_id][6]=1; // becomes detected 
  			moving_animal->ptr_isolate->isolated = 1 ;
-			moving_animal->ptr_isolate->isolated_time =(double)(today_date);
+			moving_animal->ptr_isolate->isolated_time =(double)today_date;
 			(*nth_isolate_detected)++ ;
+			//printf("nth is %d time is %f",*nth_isolate_detected,moving_animal->ptr_isolate->isolated_time) ;
 			// add movement ban lift
-				if(floor(today_date)+movement_ban_days<sim_days)
+				if((today_date+movement_ban_days)<sim_days)
 			  	{
-			  	struct event_node *adding_new_event;
+			  		int day = today_date+movement_ban_days ;
+			  	        struct event_node *adding_new_event;
 			  			adding_new_event = (struct event_node*)malloc(sizeof( struct event_node ));
 		      			adding_new_event->akey=-1; // akey does not matter
 		      			adding_new_event->src_pro_id = src_pro_id; 
 		      			adding_new_event->des_pro_id = -100;
 		      			adding_new_event->src_testarea=-100;
 			  			adding_new_event->event_type=10;//movement ban lift
+			         //   printf("set up adding node") ;
 			  
-			 			 add_event_node(event_day, floor(today_date)+movement_ban_days, adding_new_event) ;	
+			            struct event_node *current_node1;
+                        current_node1 = event_day[day];
+                        if(current_node1 == NULL)
+                         {
+                         event_day[day] = adding_new_event;
+						 }
+                         else
+                         {
+                         adding_new_event -> next_node = current_node1;
+                         event_day[day] = adding_new_event;
+                         }
+                      //   printf("node added") ;
+			 			 
 				  }
 		 	}	
 		 }
 		
- 		FarmData[src_farm_id][4]=1 ; //becomes infected (should be marked as infected already)
+ 		//FarmData[src_farm_id][4]=1 ; //becomes infected (should be marked as infected already)
  		FarmData[src_farm_id][disease_status+5] --; //minus 1
  		if(FarmData[src_farm_id][disease_status+5]<0)
 			  			{
@@ -1817,40 +1867,46 @@ else //else animal_node_pointer[] is not NULL
 	}
 /*================Remove animals from the linked lists=============================================================*/
 if (moving_animal -> previous_node != NULL)
-	{ // if moving animal's previous node is conencted to other animal
+	{ 
+//	printf("A");
+	// if moving animal's previous node is conencted to other animal
 	    //    
 		struct animal_node *prev_animal;
         prev_animal = moving_animal -> previous_node ; // get the node which moving one is connected
 	    if (moving_animal -> next_node != NULL) // if moving one's next node is conencted
 	            {
-	    //           	printf("B starts");
+	              //	printf("B starts");
 	  	        struct animal_node *next_animal;
                 next_animal = moving_animal -> next_node ; // get the next animal
                 prev_animal -> next_node = next_animal;    // reconenct previous_animal's next node
                 next_animal -> previous_node = prev_animal;//similarly reconnect next_animal's previous node
-		//           printf("B ends");
+		         //  printf("B ends");
 				}	
 		else // if next node is null
 		        {
 		   	    prev_animal -> next_node = NULL ;
 		        }
-		//       printf("A ends");    
+		    //  printf("A ends");    
 	}
 else // if previous node is null 
 	{
-	    //       printf("C starts");	
+	      //   printf("C starts");	
 	    if (moving_animal -> next_node != NULL) //and if next node is not null
 	    {  
+	  //  printf("D starts") ;
 	  	struct animal_node *next_animal;
         next_animal = moving_animal -> next_node ;
+     //   printf("next animal akey is %lld",next_animal->akey) ;
         next_animal -> previous_node = NULL;
         FarmProductionList[src_pro_id] = next_animal;
+      //  printf("D ends") ;
 		}
 		else 
 		{
+	//		printf("E starts") ;
 		FarmProductionList[src_pro_id] = NULL ; 
 		}
-		//        printf("C ends");  
+	//	       printf("C ends");  
 	}
  moving_animal->current_pro_id = -10 ; //means it's sent to slaughterhouse 
  moving_animal->previous_node = NULL;
@@ -1864,7 +1920,8 @@ else // if previous node is null
        // system("pause") ;
 	 } */
  }
-	
+ //printf("slaughter ends") ;
+}
 /*===========================Movement to slaughter END====================================================================================*/
 
 /*===========================Movement except new calves born===============================================================================*/	
@@ -2051,7 +2108,7 @@ des_farm_id = floor((current_event->des_pro_id)/3);
 			  FarmProductionStatus[src_farm_id*3+2][3]==0&&FarmProductionStatus[src_farm_id*3+2][2]==0)
 		      {
 		      	FarmData[src_farm_id][4] = 0 ;
-		      	printf("infection clear! %lld\n", src_farm_id) ;
+		     // 	printf("infection clear! %lld\n", src_farm_id) ;
 			  }	
 	}
 	else if(disease==0) //TB
@@ -2062,7 +2119,7 @@ des_farm_id = floor((current_event->des_pro_id)/3);
 			  FarmProductionStatus[src_farm_id*3+2][4]==0)
 		      {
 		      	FarmData[src_farm_id][4] = 0 ;
-		      	printf("infection clear! %lld\n", src_farm_id) ;
+		     // 	printf("infection clear! %lld\n", src_farm_id) ;
 			  }
 	    
 	   
@@ -2111,12 +2168,12 @@ int des_pro_id = current_event->des_pro_id;
 		if(disease==0&&disease_status>=1)
 		{
 			FarmData[des_farm_id][4] = 1 ;
-			printf("now farm infected") ;
+		//	printf("now farm infected") ;
 		}
 		else if(disease==1 && (disease_status==1||disease_status==2))
 		{
 			FarmData[des_farm_id][4] = 1 ;
-			printf("now farm infected") ;
+		//	printf("now farm infected") ;
 		}
 	}
 		
@@ -2195,6 +2252,7 @@ if(src_pro_id==69196)
  		printf("L2074: T %f S %f E %f I %f", FarmProductionStatus[69196][0],FarmProductionStatus[69196][1],FarmProductionStatus[69196][2],FarmProductionStatus[69196][3]) ;
         //system("pause") ;
 	 }*/
+//	 printf("move done") ;
 }
     
     
@@ -2205,7 +2263,7 @@ void test_farms(long long **FarmData,double **FarmProductionStatus, struct anima
 {
 	int random_year, num_S3,num_S4 ;
 	struct animal_node *current_animal ;
-	
+//	printf("test starts") ;
 	for (i=0; i<num_total_farms; i++)
 	{
 		if(FarmData[i][5]==current_year) // if the farm has the same testing id
@@ -2213,20 +2271,20 @@ void test_farms(long long **FarmData,double **FarmProductionStatus, struct anima
 			int current_testarea = FarmData[i][3] ;
 			if(current_testarea>=3)
 			{
-				num_S3 = FarmProductionStatus[i*3+2][7] ;
-				num_S4 = FarmProductionStatus[i*3+2][8] ;
+				num_S3 = FarmProductionStatus[i*3+2][3] ;
+				num_S4 = FarmProductionStatus[i*3+2][4] ;
 				random_year = rand()%3+1 ;
 			}
 			else if(current_testarea==2)
 			{
-				num_S3 = FarmProductionStatus[i*3+2][7] ;
-				num_S4 = FarmProductionStatus[i*3+2][8] ;
+				num_S3 = FarmProductionStatus[i*3+2][3] ;
+				num_S4 = FarmProductionStatus[i*3+2][4] ;
 				random_year = rand()%2+1 ;
 			}
 			else if(current_testarea==1||current_testarea==0)
 			{
-				num_S3 = FarmProductionStatus[i*3+2][7] + FarmProductionStatus[i*3+1][7] ;
-				num_S4 = FarmProductionStatus[i*3+2][8] + FarmProductionStatus[i*3+1][8];
+				num_S3 = FarmProductionStatus[i*3+2][3] + FarmProductionStatus[i*3+1][3] ;
+				num_S4 = FarmProductionStatus[i*3+2][4] + FarmProductionStatus[i*3+1][4];
 				random_year = 1 ;
 			}
 			else 
@@ -2240,9 +2298,10 @@ void test_farms(long long **FarmData,double **FarmProductionStatus, struct anima
 		     double P_miss = (pow(1-Se_S3,num_S3))*(pow(1-Se_S4,num_S4)) ;
 			 if ( ((double)rand()/(double)RAND_MAX) > P_miss)
 			  {
+			//  	printf("detection") ;
 			  //FarmData[i][6]=1 ; //wait until it gets slaughtered
 				// now have to change the disease status of every animal
-				if(FarmProductionStatus[i*3+2][7]>0||FarmProductionStatus[i*3+2][8]>0)
+				if(FarmProductionStatus[i*3+2][3]>0||FarmProductionStatus[i*3+2][4]>0)
 				{
 					current_animal = FarmProductionList[i*3+2] ;
 					while(current_animal!=NULL)
@@ -2253,6 +2312,7 @@ void test_farms(long long **FarmData,double **FarmProductionStatus, struct anima
 					//include today_date in function		
 						if(today_date+1<sim_days)
 			  			{
+			  			int day = today_date + 1 ;
 			  			struct event_node *adding_new_event ;
 		      			adding_new_event = (struct event_node*)malloc(sizeof( struct event_node ));
 		      			adding_new_event->akey=current_animal->akey;
@@ -2261,13 +2321,23 @@ void test_farms(long long **FarmData,double **FarmProductionStatus, struct anima
 		      			adding_new_event->src_testarea=-100;
 			  			adding_new_event->event_type=4;//slaughter
 			  
-			  			add_event_node(event_day, today_date+1, adding_new_event) ; //am I using function here???? Inside function????
+			  			 struct event_node *current_node1;
+                        current_node1 = event_day[day];
+                        if(current_node1 == NULL)
+                         {
+                         event_day[day] = adding_new_event;
+						 }
+                         else
+                         {
+                         adding_new_event -> next_node = current_node1;
+                         event_day[day] = adding_new_event;
+                         }
 		      			}
 						}
 						current_animal = current_animal->next_node ;
 					}
 				}
-				else if((FarmProductionStatus[i*3+1][7]>0||FarmProductionStatus[i*3+1][8]>0)&&current_testarea<=1)
+				if((FarmProductionStatus[i*3+1][3]>0||FarmProductionStatus[i*3+1][4]>0)&&current_testarea<=1)
 				{
 				current_animal = FarmProductionList[i*3+1] ;
 					while(current_animal!=NULL)
@@ -2286,7 +2356,18 @@ void test_farms(long long **FarmData,double **FarmProductionStatus, struct anima
 		      			adding_new_event->src_testarea=-100;
 			  			adding_new_event->event_type=4;//slaughter
 			  
-			  			add_event_node(event_day, today_date+1, adding_new_event) ; //am I using function here???? Inside function????
+			            int day = today_date + 1 ;
+			  			 struct event_node *current_node1;
+                        current_node1 = event_day[day];
+                        if(current_node1 == NULL)
+                         {
+                         event_day[day] = adding_new_event;
+						 }
+                         else
+                         {
+                         adding_new_event -> next_node = current_node1;
+                         event_day[day] = adding_new_event;
+                         }
 		      			}
 						}
 						current_animal = current_animal->next_node ;
@@ -2297,6 +2378,7 @@ void test_farms(long long **FarmData,double **FarmProductionStatus, struct anima
 		   FarmData[i][5] = FarmData[i][5] + random_year ; // updating testing year
 		}
 	}
+//	printf("test done") ;
 }
 /*----------------------------------------------------------------------------------*/
 /* MOVING ANIMALS BETEWEEN PRODUCTION TYPE*/
@@ -2311,7 +2393,7 @@ struct animal_node *ptr;
 
 
 int current_status;
-printf("move unit");
+//printf("move unit");
  for (i=0; i<num_total_farms;i++)
      {
     	//printf("%d",i);
@@ -2491,7 +2573,7 @@ printf("move unit");
 		}*/
 
 	 }  	
-	printf("move unit done") ;	
+//	printf("move unit done") ;	
 }
 
 
@@ -2830,7 +2912,7 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 /*===================================WITHIN HERD TRANSMISSION PART STARTS===========================================================================================*/
 	if(random_value2<=FarmProductionStatus[pro_id][5])
 	{
-	printf("This is transmission random value is %f\n",random_value2) ;
+//	printf("This is transmission random value is %f\n",random_value2) ;
 	//	printf("inf pressure in this farm is %f\n",FarmProductionStatus[pro_id][5]) ;
 //	printf("c trans is %d", *c_transmission);
 		(*c_transmission)++ ;
@@ -2964,7 +3046,17 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 		      adding_new_event->src_testarea=-100;
 			  adding_new_event->event_type=6;//occult to detectable happens
 			  
-			  add_event_node(event_day, day_to_add, adding_new_event) ; //am I using function here???? Inside function????
+			   struct event_node *current_node1;
+                        current_node1 = event_day[day_to_add];
+                        if(current_node1 == NULL)
+                         {
+                         event_day[day_to_add] = adding_new_event;
+						 }
+                         else
+                         {
+                         adding_new_event -> next_node = current_node1;
+                         event_day[day_to_add] = adding_new_event;
+                         }
 		      }
 	 // printf("transmission done\n") ;
        	}
@@ -2976,7 +3068,7 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 	else if((random_value2>FarmProductionStatus[pro_id][5])&&(random_value2<=(FarmProductionStatus[pro_id][5]+FarmProductionStatus[pro_id][7]))) // if mutation is selected
 	/*==============MUTATION PART STARTS=================================================================================================================*/
 		{
-	printf("This is mutation") ;
+//	printf("This is mutation") ;
 		//	system("pause") ;
 	//	printf("c mut is %d", *c_mutation) ;
 		(*c_mutation)++ ;
@@ -2993,6 +3085,7 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 		 if(current_animal==NULL)
 		 {
 		 	printf("Something wrong! Animals should exist here but not!");
+		 	system("pause") ;
 		 }
 		 else
 		 {
@@ -3064,7 +3157,7 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 	
 	else //else detection
 	{
-		printf("This is detection") ;
+	//	printf("This is detection") ;
 	//	printf("detection pressure is %f", detection_pressure) ;
 	//	printf("threshold is %f and ran val is %f",FarmProductionStatus[pro_id][5]+FarmProductionStatus[pro_id][7], random_value2) ;
 	//	system("pause") ;
@@ -3081,10 +3174,12 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 		 if(current_animal==NULL)
 		 {
 		 	printf("Something wrong! Animals should exist here but not!");
+		 	system("pause") ;
 		 }
 		 if(FarmData[farm_id][6]==1)
 		 {
 		 	printf("This farm is already detected and should not be re-detected again!");
+		 	system("pause") ;
 		 }
 		 else //else1
 		 {
@@ -3171,8 +3266,18 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 		      			adding_new_event->des_pro_id = -100;
 		      			adding_new_event->src_testarea=-100;
 			  			adding_new_event->event_type=10;//movement ban lift
-			  
-			 			 add_event_node(event_day, floor(today_date)+movement_ban_days, adding_new_event) ;	
+			            int day = floor(today_date)+movement_ban_days ;
+			 			struct event_node *current_node1;
+                        current_node1 = event_day[day];
+                        if(current_node1 == NULL)
+                         {
+                         event_day[day] = adding_new_event;
+						 }
+                         else
+                         {
+                         adding_new_event -> next_node = current_node1;
+                         event_day[day] = adding_new_event;
+                         }	
 				  }
 			  	
 		}
