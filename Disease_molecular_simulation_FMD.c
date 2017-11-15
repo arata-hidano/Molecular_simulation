@@ -47,6 +47,7 @@ Movement (dynamic memory)
 #include <math.h>
 #include <time.h>
 #include <malloc.h>
+#include <ctype.h>
 
 /*DEFINE VARIABLES*/
 #define num_production_type 3
@@ -151,9 +152,9 @@ const char* OutNexusFile_TB = "TB_Nexus";
 const char* OutIsolateDataFile_FMD = "FMD_Sequence_data_iteration";
 const char* OutNexusFile_FMD = "FMD_Nexus";
 
-char* OutIsolateDataFile_origin ;//"Sequence_data_iteration";
+//char* OutIsolateDataFile_origin ;//"Sequence_data_iteration";
 const char* extension = ".csv" ; 
-char* OutNexusFile_origin ;// "Nexus";
+//char* OutNexusFile_origin ;// "Nexus";
 const char* extension_nexus = ".nex" ;
 
 int num_isolate_vars = 8;
@@ -248,6 +249,7 @@ void read_sequence_data() ;
 int createdata();
 void JukesCantor();
 int export_seq_nexus() ;
+int export_IsolateData() ;
 /* Variables related to farm and FarmProductionStatus*/
 //int num_farms = 16950; // number of farms present at 2000 july 
 
@@ -257,7 +259,8 @@ int export_seq_nexus() ;
 /*-------START OF THE MAIN PROGRAMME------------------------------*/
 /* MAIN PROGRAM */
 int main(void){
-
+char* OutIsolateDataFile_origin ;
+char* OutNexusFile_origin ;
   if(disease==0) //TB
       	{
       		max_S2toS3 = max_S2toS3_TB;
@@ -265,8 +268,8 @@ int main(void){
       		beta_a = beta_a_TB ;
       		seq_length = seq_length_TB + 1;
       		mu = mu_TB ;
-      		OutIsolateDataFile_origin = malloc(strlen(OutIsolateDataFile_TB)) ;
-      		OutNexusFile_origin = malloc(strlen(OutNexusFile_TB)) ;
+      		OutIsolateDataFile_origin = malloc(strlen(OutIsolateDataFile_TB)+1) ;
+      		OutNexusFile_origin = malloc(strlen(OutNexusFile_TB)+1) ;
       		strcpy(OutIsolateDataFile_origin, OutIsolateDataFile_TB);
 			strcpy(OutNexusFile_origin, OutNexusFile_TB);
       		
@@ -278,8 +281,8 @@ int main(void){
 			beta_a = beta_a_FMD ;
 			seq_length = seq_length_FMD + 1 ;
 			mu = mu_FMD ;
-			OutIsolateDataFile_origin = malloc(strlen(OutIsolateDataFile_FMD)) ;
-      		OutNexusFile_origin = malloc(strlen(OutNexusFile_FMD)) ;
+			OutIsolateDataFile_origin = malloc(strlen(OutIsolateDataFile_FMD)+1) ;
+      		OutNexusFile_origin = malloc(strlen(OutNexusFile_FMD)+1) ;
 			strcpy(OutIsolateDataFile_origin, OutIsolateDataFile_FMD);
 			strcpy(OutNexusFile_origin, OutNexusFile_FMD);
 			
@@ -305,15 +308,15 @@ char Seq_master[seq_length];
 /*==========2.1  Read in Farm Data=============================================================== */
     	// This is the basic farm data such as number of cattle in each management status
    	 	/* First create array FarmData, which specifies the row memory size*/
-   	  	 long long **FarmData = (long long**)malloc( sizeof(long long *) * num_total_farms);
+   	  	 double **FarmData =malloc( sizeof(double *) * num_total_farms2);
    	  	 for(i = 0; i < num_total_farms; i++)
       	  {
      	       /*Then, for each row, specifies the required memory size for column*/
-     	     FarmData[i] = (long long*)malloc( sizeof(long long) * num_farm_var); 
+     	     FarmData[i] = malloc( sizeof(double) * num_farm_var); 
 			  /* what kind of farm variable do we need?*/ 
      	   }
       	
-     	read_farm_data(FarmDataFile, FarmData, num_total_farms);
+     	read_farm_data(FarmDataFile, FarmData, num_total_farms2);
 		 //printf("farm data read");     
 /*=====2.3 Read in animal Data===========================================================*/
        		long long **AnimalData = (long long**)malloc( sizeof(long long *) * num_animals);
@@ -484,7 +487,7 @@ for(i = 0; i < num_farm_production; i++)
       char* OutNexusFile;
       char number[4] ;
       // making file name for IsolateData
-      snprintf(number, 4, "%d", iteration+38) ;
+      snprintf(number, 4, "%d", iteration+45) ;
       OutIsolateDataFile = malloc(strlen(OutIsolateDataFile_origin)+4+1+4) ; //size of _origin, iteration, /0(null terminate), and extension(csv)
       strcpy(OutIsolateDataFile, OutIsolateDataFile_origin);
       
@@ -503,7 +506,7 @@ for(i = 0; i < num_farm_production; i++)
       	var6 = 0;
 		current_id_isolate = &var6; //reset the counter for current id for isolate
       	// INITIALISE THE FARM TB DETECTED STATUS, SUM OF OCCULT, SUM OF DETECTABLE
-      	for(i=0; i< num_total_farms; i++)
+      	for(i=0; i< num_total_farms2; i++)
       	{
       		
       		FarmData[i][6] = 0;
@@ -608,7 +611,7 @@ for (i=0; i < num_animals; i++)
 				animal_node_pointer[current_akey]->sex = (int)AnimalData[i][4] ;
                 animal_node_pointer[current_akey]->breed = (int)AnimalData[i][5];
                 animal_node_pointer[current_akey]->pregnant_status = (int)AnimalData[i][6];
-				      
+			 	animal_node_pointer[current_akey]->disease_status = 0 ;
 				
             	
             /*If pregnant, determine when they give birth. This data can be stored at Event table rather than the linked animal list*/
@@ -721,7 +724,7 @@ for (i=0; i < num_animals; i++)
 		} 
 		else
 		{
-			animal_node_pointer[current_akey]->disease_status = 0 ;
+		
 			//new_node -> disease_status = 0 ;
 			animal_node_pointer[current_akey]->ptr_isolate = NULL ;
 			//new_node -> ptr_isolate = NULL ;
@@ -1164,12 +1167,12 @@ if(today_date-current_year*365==0) // beginning of the year
 		      FarmData[current_farm][7]++;
 		      if(FarmData[current_farm][7]!=(FarmProductionStatus[current_farm*3][3]+FarmProductionStatus[current_farm*3+1][3]+FarmProductionStatus[current_farm*3+2][3]))
 		      {
-		      	printf("L1395: now FarmD is %lld and FPS is %lld - %lld - %lld",FarmData[current_farm][7],FarmProductionStatus[current_farm*3][3],FarmProductionStatus[current_farm*3+1][3],FarmProductionStatus[current_farm*3+2][3]);
+		      	//printf("L1395: now FarmD is %lld and FPS is %lld - %lld - %lld",FarmData[current_farm][7],FarmProductionStatus[current_farm*3][3],FarmProductionStatus[current_farm*3+1][3],FarmProductionStatus[current_farm*3+2][3]);
 		      	system("pause") ;
 			  }
 			  if(FarmData[current_farm][7]<=0)
               {
-              	printf("L1392:inf is %lld farm is %ld\n",FarmData[current_farm][7],current_farm) ;
+              //	printf("L1392:inf is %lld farm is %ld\n",FarmData[current_farm][7],current_farm) ;
               	system("pause") ;
               }
 		      
@@ -1209,13 +1212,13 @@ if(today_date-current_year*365==0) // beginning of the year
 		      FarmData[current_farm][7]-- ;//decrease occult
 		       if(FarmData[current_farm][7]!=(FarmProductionStatus[current_farm*3][3]+FarmProductionStatus[current_farm*3+1][3]+FarmProductionStatus[current_farm*3+2][3]))
 		      {
-		      	printf("L1440: now FarmD is %lld and FPS is %lld - %lld - %lld",FarmData[current_farm][7],FarmProductionStatus[current_farm*3][3],FarmProductionStatus[current_farm*3+1][3],FarmProductionStatus[current_farm*3+2][3]);
+		      //	printf("L1440: now FarmD is %lld and FPS is %lld - %lld - %lld",FarmData[current_farm][7],FarmProductionStatus[current_farm*3][3],FarmProductionStatus[current_farm*3+1][3],FarmProductionStatus[current_farm*3+2][3]);
 		      	system("pause") ;
 			  }
 		      if(FarmData[current_farm][7]<0)
 		      {
-		      	printf("L1445:now it's negative %lld day %f farm is %d\n",FarmData[current_farm][7],next_non_markov_date,current_farm) ;
-		      	printf("inf is %f immune is %f pro is %lld\n",FarmProductionStatus[current_pro_id][3],FarmProductionStatus[current_pro_id][4],current_pro_id) ;
+		      //	printf("L1445:now it's negative %lld day %f farm is %d\n",FarmData[current_farm][7],next_non_markov_date,current_farm) ;
+		      //	printf("inf is %f immune is %f pro is %lld\n",FarmProductionStatus[current_pro_id][3],FarmProductionStatus[current_pro_id][4],current_pro_id) ;
 			  system("pause") ;
 			  }
 		      //animal_node_pointer[animal_akey]->ptr_isolate->isolated_time = next_non_markov_date;
@@ -1311,6 +1314,7 @@ if((*nth_isolate_detected)>=15)
 	 }
    
    free(OutIsolateDataFile) ;
+   
  //  printf("transmission happened %d", *c_transmission) ;
   //  printf("mutation happened %d", *c_mutation) ;
   //   printf("detection happened %d", *c_detection) ;
@@ -1388,7 +1392,13 @@ for(i=0;i<sim_days;i++)
 
 /*=======================EXPORT OUTPUT (END OF MAIN)========================================================================================================*/
 //write_OutPut(OutPutFile,OutPut,tot_iterations,num_OutPut) ;    
-
+ for(i = 0; i < num_total_farms; i++)
+      	  {
+     	     free(FarmData[i]); 
+     	   }
+     	   free(FarmData);
+     	   free(OutIsolateDataFile_origin);
+     	   free(OutNexusFile_origin) ;
 } //END OF MAIN INT
 
 
@@ -1400,19 +1410,20 @@ for(i=0;i<sim_days;i++)
 /* -------------------------------------------------------------------------- */
 /* read_farm_data: READING AND PARSING CSV FARM LIST */
 /* -------------------------------------------------------------------------- */
-void read_farm_data(char FarmDataFile[], long long **FarmData,int num_farms)
+void read_farm_data(char FarmDataFile[], double **FarmData,int num_farms)
 {     
     /* OPEN INPUT FILE */
     FILE *Farms = fopen(FarmDataFile,"r"); 
        
     /* DECLARE STORAGE VARIABLES */
-    long long line_num, farm_id, testarea, disease_status,test_schedule_id;
-    double x_coord, y_coord;
+    double farm_id, testarea, disease_status,test_schedule_id;
+    double x_coord, y_coord, detected, S3,S4,inf_farm,inf_time;
+    int line_num;
     
     /* READ LINES OF FARM FILE */
     for(line_num = 0; line_num < num_farms; line_num++)
       { 
-         fscanf(Farms, "%lld,%lf,%lf,%lld,%lld, %lld", &farm_id, &x_coord, &y_coord, &testarea,&disease_status, &test_schedule_id);
+         fscanf(Farms, "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",&farm_id, &x_coord, &y_coord, &testarea,&disease_status, &test_schedule_id,&detected, &S3,&S4,&inf_farm,&inf_time);
 
          /* STORE VALUES IN FARM LIST */
              FarmData[line_num][0] = farm_id;
@@ -1421,12 +1432,13 @@ void read_farm_data(char FarmDataFile[], long long **FarmData,int num_farms)
              FarmData[line_num][3] = testarea ;
              FarmData[line_num][4] = disease_status; 
              FarmData[line_num][5] = test_schedule_id;
-             FarmData[line_num][6] = 0;//tb_detected or not
-             FarmData[line_num][7] = 0;//sum of occult
-             FarmData[line_num][8] = 0;//sum of detectable
-             FarmData[line_num][9] = -1; //farm id for that will infect this farm first
-             FarmData[line_num][10] = -1; // time that this farm gets infection from the above farm
-             
+             FarmData[line_num][6] = detected;//tb_detected or not
+             FarmData[line_num][7] = S3;//sum of occult
+             FarmData[line_num][8] = S4;//sum of detectable
+             FarmData[line_num][9] = inf_farm; //farm id for that will infect this farm first
+             FarmData[line_num][10] = inf_time; // time that this farm gets infection from the above farm
+             //printf("%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",FarmData[0][0],FarmData[0][1],FarmData[0][2],FarmData[0][3],FarmData[0][4],FarmData[0][5],FarmData[0][6],FarmData[0][7],FarmData[0][8],FarmData[0][9]);
+             //system("pause") ;
       }            
    
    /* CLOSE INPUT FILE */
@@ -1749,7 +1761,7 @@ void visualize_animals(struct animal_node *FarmProductionList[], int production_
 /* -------------------------------------------------------------------------- */
 /* MOVE ANIMAL NODE FROM ONE TO OTHER FARM */
 /* -------------------------------------------------------------------------- */
-void move_animal_unit(struct animal_node *FarmProductionList[],long long **FarmData,double **FarmProductionStatus,struct event_node *event_day[], struct event_node *current_event, 
+void move_animal_unit(struct animal_node *FarmProductionList[],double **FarmData,double **FarmProductionStatus,struct event_node *event_day[], struct event_node *current_event, 
 struct animal_node **animal_node_pointer,double Se_occult, double Se_detect, int disease, double Se_slaughter, int date, int *nth_slaughter, int *nth_between,
 struct animal_node *inf_slaughtered[], struct isolate **head_list_isolate, struct inf_move *Farm_ptr_inf_move[])
 {
@@ -1845,7 +1857,7 @@ else //else animal_node_pointer[] is not NULL
  		FarmData[src_farm_id][disease_status+5] --; //minus 1
  		if(FarmData[src_farm_id][disease_status+5]<0)
 			  			{
-			  				printf("2133:now it's negative %lld farm %lld",FarmData[src_farm_id][disease_status+5],src_farm_id) ;
+			  			//	printf("2133:now it's negative %lld farm %lld",FarmData[src_farm_id][disease_status+5],src_farm_id) ;
 						  system("pause") ;
 						  }
 		if((FarmData[src_farm_id][7]+FarmData[src_farm_id][8]+FarmProductionStatus[src_farm_id*3][2]+FarmProductionStatus[src_farm_id*3+1][2]+FarmProductionStatus[src_farm_id*3+2][2])==0)
@@ -2087,8 +2099,8 @@ des_farm_id = floor((current_event->des_pro_id)/3);
 	   FarmProductionStatus[src_pro_id][disease_status+1] = FarmProductionStatus[src_pro_id][disease_status+1] - 1;	
 	    if(FarmData[src_farm_id][7]!=(FarmProductionStatus[src_farm_id*3][3]+FarmProductionStatus[src_farm_id*3+1][3]+FarmProductionStatus[src_farm_id*3+2][3]))
 		      {
-		      	printf("L2484: now FarmD is %lld and FPS is %f - %f - %f\n",FarmData[src_farm_id][7],FarmProductionStatus[src_farm_id*3][3],FarmProductionStatus[src_farm_id*3+1][3],FarmProductionStatus[src_farm_id*3+2][3]);
-		      	printf("L2485: status is %d pro id is %lld farm status is %f\n", disease_status, src_pro_id,FarmData[src_farm_id][4]) ;
+		      	//printf("L2484: now FarmD is %lld and FPS is %f - %f - %f\n",FarmData[src_farm_id][7],FarmProductionStatus[src_farm_id*3][3],FarmProductionStatus[src_farm_id*3+1][3],FarmProductionStatus[src_farm_id*3+2][3]);
+		      //	printf("L2485: status is %d pro id is %lld farm status is %f\n", disease_status, src_pro_id,FarmData[src_farm_id][4]) ;
 				  system("pause") ;
 			  }
 	if(disease==1) //FMD
@@ -2171,7 +2183,7 @@ int des_pro_id = current_event->des_pro_id;
 	if(FarmData[des_farm_id][7]!=(FarmProductionStatus[des_farm_id*3][3]+FarmProductionStatus[des_farm_id*3+1][3]+FarmProductionStatus[des_farm_id*3+2][3]))
 		      {
 		      	
-		      	printf("L2539: now FarmD is %lld and FPS is %f - %f - %f",FarmData[des_farm_id][7],FarmProductionStatus[des_farm_id*3][3],FarmProductionStatus[des_farm_id*3+1][3],FarmProductionStatus[des_farm_id*3+2][3]);
+		      	//printf("L2539: now FarmD is %lld and FPS is %f - %f - %f",FarmData[des_farm_id][7],FarmProductionStatus[des_farm_id*3][3],FarmProductionStatus[des_farm_id*3+1][3],FarmProductionStatus[des_farm_id*3+2][3]);
 		      	system("pause") ;
 			  }
 			 
@@ -2249,7 +2261,7 @@ if(src_pro_id==69196)
 /* -------------------------------------------------------------------------- */
 /* TESTING HERDS */
 /* -------------------------------------------------------------------------- */
-void test_farms(long long **FarmData,double **FarmProductionStatus, struct animal_node *FarmProductionList[], struct event_node *event_day[], struct event_node *current_event,double Se_S3, double Se_S4, int current_year, double today_date)
+void test_farms(double **FarmData,double **FarmProductionStatus, struct animal_node *FarmProductionList[], struct event_node *event_day[], struct event_node *current_event,double Se_S3, double Se_S4, int current_year, double today_date)
 {
 	int random_year, num_S3,num_S4 ;
 	struct animal_node *current_animal ;
@@ -2373,7 +2385,7 @@ void test_farms(long long **FarmData,double **FarmProductionStatus, struct anima
 /*----------------------------------------------------------------------------------*/
 /* MOVING ANIMALS BETEWEEN PRODUCTION TYPE*/
 /*----------------------------------------------------------------------------------*/
-void move_production_type(double **FarmProductionStatus,struct animal_node *FarmProductionList[],int num_total_farms2,long long **FarmData )
+void move_production_type(double **FarmProductionStatus,struct animal_node *FarmProductionList[],int num_total_farms2,double **FarmData )
 {
 struct animal_node *moving_animal;
 struct animal_node *next_animal;
@@ -2459,7 +2471,7 @@ int current_status;
 		 	FarmProductionStatus[i*3+2][0]++;
 		 	if(FarmData[i][7]!=(FarmProductionStatus[i*3][3]+FarmProductionStatus[i*3+1][3]+FarmProductionStatus[i*3+2][3]))
 		      {
-		      	printf("L2746: now FarmD is %lld and FPS is %f - %f - %f",FarmData[i][7],FarmProductionStatus[i*3][3],FarmProductionStatus[i*3+1][3],FarmProductionStatus[i*3+2][3]);
+		      //	printf("L2746: now FarmD is %lld and FPS is %f - %f - %f",FarmData[i][7],FarmProductionStatus[i*3][3],FarmProductionStatus[i*3+1][3],FarmProductionStatus[i*3+2][3]);
 		      	system("pause") ;
 			  }
 		}
@@ -2547,7 +2559,7 @@ int current_status;
 		 FarmProductionStatus[i*3+1][0]++;
 		 if(FarmData[i][7]!=(FarmProductionStatus[i*3][3]+FarmProductionStatus[i*3+1][3]+FarmProductionStatus[i*3+2][3]))
 		      {
-		      	printf("L2860: now FarmD is %lld and FPS is %f - %f - %f",FarmData[i][7],FarmProductionStatus[i*3][3],FarmProductionStatus[i*3+1][3],FarmProductionStatus[i*3+2][3]);
+		      //	printf("L2860: now FarmD is %lld and FPS is %f - %f - %f",FarmData[i][7],FarmProductionStatus[i*3][3],FarmProductionStatus[i*3+1][3],FarmProductionStatus[i*3+2][3]);
 		      	system("pause") ;
 			  }
 		 }
@@ -2572,7 +2584,7 @@ int current_status;
 /*----------------------------------------------------------------------------------*/
 /* CALCULATE NEXT MARKOV EVENT DATE*/
 /*----------------------------------------------------------------------------------*/
-double update_markov_date(double today_date, long long **FarmData, double **FarmProductionStatus,struct animal_node *FarmProductionList[],int num_farm_production,double beta_a,double beta_b, 
+double update_markov_date(double today_date, double **FarmData, double **FarmProductionStatus,struct animal_node *FarmProductionList[],int num_farm_production,double beta_a,double beta_b, 
 int next_non_markov_date, struct event_node *event_day[], int detection_scenario, int disease, int mutation_model, int max_S2toS3, int seq_length, 
 int *current_id_isolate, double mu, int * nth_isolate_detected,struct isolate **head_list_isolate,  int *c_transmission, int *c_mutation, int *c_detection, double detection_pressure_origin, int *died_out,
 int *max_isolate_reached)
@@ -2772,7 +2784,7 @@ tb_detection_p=0.9; //@@@@do I put higher sensitivity for this?
 		return(today_date) ;
 	}
 	//printf("inf pressure is %f",sum_pressure);
-	 double random_value = (double)(rand()+1)/(double)(RAND_MAX+1);
+	 double random_value = (double)(rand()+1)/((double)(RAND_MAX)+1);
 //	 printf("random value is %f",random_value);
      day_to_markov =(-log(random_value))/sum_pressure ; // Waiting time
      if(day_to_markov<0)
@@ -2886,16 +2898,16 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 		detection_pressure = @@@ ;
 		}
 	@@@@------------------------------------------------------*/	
-	random_value2 = ((double)(rand()+1)/(double)(RAND_MAX+1))*(FarmProductionStatus[pro_id][7]+FarmProductionStatus[pro_id][5]+detection_pressure); // get random value between 0 and sum of inf/mutation/detection pressure
+	random_value2 = ((double)(rand()+1)/((double)(RAND_MAX)+1))*(FarmProductionStatus[pro_id][7]+FarmProductionStatus[pro_id][5]+detection_pressure); // get random value between 0 and sum of inf/mutation/detection pressure
  //  printf("random value2 is %f\n",random_value2) ;
    if(random_value2==0)
    {
-   	printf("inf is %lld mut is %lld",FarmProductionStatus[pro_id][5],FarmProductionStatus[pro_id][7]) ;
+   	//printf("inf is %lld mut is %lld",FarmProductionStatus[pro_id][5],FarmProductionStatus[pro_id][7]) ;
    }
 	}
     else
     {
-    random_value2 = (double)(rand()+1)/(double)(RAND_MAX+1)*(FarmProductionStatus[pro_id][5]);
+    random_value2 = (double)(rand()+1)/((double)(RAND_MAX)+1)*(FarmProductionStatus[pro_id][5]);
 	}
 /*=====================CHOOSE WHICH EVENTS?==============================================================*/	
 //printf("random value 2 is %f", random_value) ;
@@ -2953,8 +2965,8 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 	    } 
 		if(current_animal==NULL)
 		{
-			printf("animal can't be found. total is %d, current %d\n",total_s,counter) ;
-			printf("pro id is %lld",pro_id) ;
+		//	printf("animal can't be found. total is %d, current %d\n",total_s,counter) ;
+		//	printf("pro id is %lld",pro_id) ;
 			system("pause") ;
 		}
 		
@@ -3212,14 +3224,14 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 			  			long farm_id = (int)floor(pro_id/3) ;
 			  			if(FarmData[farm_id][7]!=(FarmProductionStatus[farm_id*3][3]+FarmProductionStatus[farm_id*3+1][3]+FarmProductionStatus[farm_id*3+2][3]))
 			  			{
-			  				printf("L3569: FD is %lld FPS %f - %f - %f",FarmData[farm_id][7],FarmProductionStatus[farm_id*3][3],FarmProductionStatus[farm_id*3+1][3],FarmProductionStatus[farm_id*3+2][3]) ;
+			  			//	printf("L3569: FD is %lld FPS %f - %f - %f",FarmData[farm_id][7],FarmProductionStatus[farm_id*3][3],FarmProductionStatus[farm_id*3+1][3],FarmProductionStatus[farm_id*3+2][3]) ;
 						  	system("pause") ;
 						  }
 			  			
 			  			
 			  			if(FarmData[(int)floor(pro_id/3)][7]<0)
 			  			{
-			  				printf("L3503:now it's negative %lld", FarmData[(int)floor(pro_id/3)][7]) ;
+			  			//	printf("L3503:now it's negative %lld", FarmData[(int)floor(pro_id/3)][7]) ;
 			  				system("pause") ;
 						  }
 			  			
@@ -3326,7 +3338,7 @@ return(today_date) ;
 /*------------------------------------------------------------------------------------------------*/
 /*COUNT NUMBER OF INFECTED AND DETECTED FARMS*/
 /*--------------------------------------------------------------*/
-void count_farms_infected_detected(long long **FarmData, double **OutPut, long num_total_farms2, int sim)
+void count_farms_infected_detected(double **FarmData, double **OutPut, long num_total_farms2, int sim)
 {
 long i;
 OutPut[sim][0]=0;
