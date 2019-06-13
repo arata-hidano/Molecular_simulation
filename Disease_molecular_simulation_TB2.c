@@ -8,6 +8,7 @@ What's new?
 18th Nov 2017: Number of isolate limits between 50 and 150
 19th Nov 2017: Only one sample per farm allowed. Change FarmDataStatus[i][5] setting.
 30th Mar 2018: Add subsampling in each sampling scenario after the end of each iteration.
+13th June 2019: Fixed problems in freeing event data. (1) Added next_node = NULL to everything (2) x sim_days -> i
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
 
@@ -1303,7 +1304,7 @@ if(*sample_limit==1)
 		      adding_new_event->des_pro_id = -100;
 		      adding_new_event->src_testarea=-100;
 			  adding_new_event->event_type=7;//occult to detectable happens
-			  
+			  adding_new_event->next_node = NULL;
 			  add_event_node(event_day, day_to_add, adding_new_event) ;
 		      }
 		//	  printf("S2 to S3 done") ;
@@ -1535,13 +1536,13 @@ struct event_node *event;
 struct event_node *next_event;
 for(i=0;i<sim_days;i++)
 {
-	while(event_day[sim_days]!=NULL)
+	while(event_day[i]!=NULL)
 	{
 		
-		event = event_day[sim_days];
+		event = event_day[i];
 		next_event = event->next_node ;
 		free(event);
-		event_day[sim_days] = next_event ;
+		event_day[i] = next_event ;
 		
 	}
 }
@@ -2071,6 +2072,7 @@ else //else animal_node_pointer[] is not NULL
 		      			adding_new_event->des_pro_id = -100;
 		      			adding_new_event->src_testarea=-100;
 			  			adding_new_event->event_type=10;//movement ban lift
+			  			adding_new_event->next_node=NULL;
 			         //   printf("set up adding node") ;
 			  
 			            struct event_node *current_node1;
@@ -2560,6 +2562,7 @@ void test_farms(double **FarmData,double **FarmDataStatus, double **FarmProducti
 		      			adding_new_event->des_pro_id = -100;
 		      			adding_new_event->src_testarea=-100;
 			  			adding_new_event->event_type=4;//slaughter
+			  			adding_new_event->next_node=NULL;
 			  
 			  			 struct event_node *current_node1;
                         current_node1 = event_day[day];
@@ -2595,7 +2598,7 @@ void test_farms(double **FarmData,double **FarmDataStatus, double **FarmProducti
 		      			adding_new_event->des_pro_id = -100;
 		      			adding_new_event->src_testarea=-100;
 			  			adding_new_event->event_type=4;//slaughter
-			  
+			            adding_new_event->next_node=NULL;
 			            int day = today_date + 1 ;
 			  			 struct event_node *current_node1;
                         current_node1 = event_day[day];
@@ -3331,7 +3334,7 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 		      adding_new_event->des_pro_id = -100;
 		      adding_new_event->src_testarea=-100;
 			  adding_new_event->event_type=6;//occult to detectable happens
-			  
+			  adding_new_event->next_node=NULL;
 			   struct event_node *current_node1;
                         current_node1 = event_day[day_to_add];
                         if(current_node1 == NULL)
@@ -3571,6 +3574,7 @@ DEFINE WHICH EVENTS OCCURRED IN WHICH ANIMALS
 		      			adding_new_event->des_pro_id = -100;
 		      			adding_new_event->src_testarea=-100;
 			  			adding_new_event->event_type=10;//movement ban lift
+			  			adding_new_event->next_node=NULL;
 			            int day = floor(today_date)+movement_ban_days ;
 			 			struct event_node *current_node1;
                         current_node1 = event_day[day];
