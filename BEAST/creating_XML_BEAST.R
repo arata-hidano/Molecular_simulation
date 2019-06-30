@@ -163,7 +163,7 @@ statenode = newXMLNode("state", attrs=c(id="state",storeEvery="5000"), parent=ru
                                                           ),
                                                         "1.0",parent=statenode)
           parameter4 = newXMLNode("parameter", attrs=c(id=paste0("reproductiveNumber_BDSKY_Serial.t:",nexus_name),
-                                                       dimension="5",
+                                                       dimension="3",
                                                        lower="0.0",
                                                        name="stateNode",
                                                        upper="Infinity"
@@ -238,10 +238,10 @@ posterior = newXMLNode("distribution", attrs=c(id="posterior", spec="util.Compou
           # parameter of this distribution
             parameter_dis1 = newXMLNode("parameter", attrs=c(id ="RealParameter.3",
                                                              estimate="false",
-                                                             name="M"),"5.2",parent = becomeUninfectiousRatePrior_BDSKY_Serial_dis)
+                                                             name="M"),"-5.1",parent = becomeUninfectiousRatePrior_BDSKY_Serial_dis)
             parameter_dis2 = newXMLNode("parameter", attrs=c(id ="RealParameter.4",
                                                              estimate="false",
-                                                             name="S"),"0.6",parent = becomeUninfectiousRatePrior_BDSKY_Serial_dis)
+                                                             name="S"),"0.7",parent = becomeUninfectiousRatePrior_BDSKY_Serial_dis)
                                                                               
   
 #========1.2.2 Clockrate
@@ -283,7 +283,7 @@ samplingProportionPrior_BDSKY_Serial =  newXMLNode("prior", attrs=c(id =paste0("
                                                                                 name="distribution",
                                                                                 x="@samplingProportionSlice"),            parent = prior)     
     # samplingProportionPrior_BDSKY_Serial_dis
-    samplingProportionPrior_BDSKY_Serial =  newXMLNode("Uniform",attrs=c(id ="Uniform.4",lower="1.0E-5",name="distr",upper="0.0025"),parent = samplingProportionPrior_BDSKY_Serial)
+    samplingProportionPrior_BDSKY_Serial =  newXMLNode("Uniform",attrs=c(id ="Uniform.4",lower="1.0E-5",name="distr",upper="0.05"),parent = samplingProportionPrior_BDSKY_Serial)
             
 #==========1. Prior Done============================================================================#
     
@@ -468,26 +468,48 @@ tracelog   =    newXMLNode("logger", attrs=c(id="tracelog",
 
 #======A5 done======#
 #========Create node done================*/
-  saveXML(doc, paste0("C:/BEAST_with_jre.v2.5.2.Windows/BEAST/xml/nexus",i,".xml"), prefix='<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
+  saveXML(doc, paste0("C:/BEAST_with_jre.v2.5.2.Windows/BEAST/xml2/nexus",i,".xml"), prefix='<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
 }
 #print(doc)
 #Export XML file
 
 
 #======Preprare batch file to process xml into BEAST
-k = 8
+k = 0
 for(i in k:19)
 {
   
-  fileConn<-file(paste0("C:\\BEAST_with_jre.v2.5.2.Windows\\BEAST\\run1_",i*5,"_",i*5+4,".bat"))
+  fileConn<-file(paste0("C:\\BEAST_with_jre.v2.5.2.Windows\\BEAST\\run1_",i*5+1,"_",i*5+5,".bat"))
   writeLines(c("c:",
                 "cd C:\\BEAST_with_jre.v2.5.2.Windows\\BEAST",
-               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml\\nexus",i*5,".xml"),
-               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml\\nexus",i*5+1,".xml"),
-               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml\\nexus",i*5+2,".xml"),
-               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml\\nexus",i*5+3,".xml"),
-               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml\\nexus",i*5+4,".xml")
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*5+1,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*5+2,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*5+3,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*5+4,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*5+5,".xml")
                ), fileConn)
+  close(fileConn)
+  
+}
+
+k = 0
+for(i in k:9)
+{
+  
+  fileConn<-file(paste0("C:\\BEAST_with_jre.v2.5.2.Windows\\BEAST\\run1_",i*10+1,"_",i*10+10,".bat"))
+  writeLines(c("c:",
+               "cd C:\\BEAST_with_jre.v2.5.2.Windows\\BEAST",
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*10+1,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*10+2,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*10+3,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*10+4,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*10+5,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*10+6,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*10+7,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*10+8,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*10+9,".xml"),
+               paste0("java -Dbeast.load.jars=true -jar lib\\beast.jar -overwrite xml2\\nexus",i*10+10,".xml")
+                 ), fileConn)
   close(fileConn)
   
 }
